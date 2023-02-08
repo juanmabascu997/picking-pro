@@ -1,0 +1,39 @@
+table.mylabel {
+  border: 1px solid black;
+  border-collapse: collapse;
+  font-size: 12pt;
+  font-weight: bold;
+  margin-top: -15px;
+  width: 140%;
+  height: 100%;
+}
+
+tr.mylabeltr {
+  border: 1px solid black;
+  border-collapse: collapse;
+  height: 50px;
+}
+
+td.mylabeltd {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+
+.rotate {
+  position: relative;
+  top: 5%;
+  transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
+  -moz-transform: rotate(90deg);
+  -webkit-transform: rotate(90deg);
+  -o-transform: rotate(90deg);
+  
+}
+
+.label {
+  width: 3.93in;
+  height: 5.9in;
+  /*border: 1px solid black;*/
+  /* Setup */
+  position: relative;
+}
