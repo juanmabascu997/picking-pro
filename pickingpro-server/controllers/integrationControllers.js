@@ -7,14 +7,12 @@ const fs = require('fs');
 const { response } = require("express");
 
 module.exports.connectTiendanube = async (req, res) => {
-
     try {
         if (!req.query.code)
             res.json({ error: 'No code' });
-
         const data = {
-            client_id: '5385',
-            client_secret: 'c438a116b19e224cc71a323eb3b60123a90aee61c1502a28',
+            client_id: '6152',
+            client_secret: '614538868b82b2a7df803438041e41dd3f11dc77ff618a89',
             grant_type: 'authorization_code',
             code: req.query.code
         }
@@ -30,13 +28,14 @@ module.exports.connectTiendanube = async (req, res) => {
                 'User-Agent': 'picking-pro (nahuelezequiel20@gmail.com)'
             }
         })
-
+        console.log('storeinfo: ', storeinfo);
         /*-------GUARDO EN MI BASE DE DATOS---------*/
         const storeinfoDB = {
             nombre: storeinfo.data.name.es,
             user_id: response.data.user_id,
             access_token: response.data.access_token
         }
+        console.log('storeinfoDB: ', storeinfoDB);
 
         /* Rutina para guardar mi documento */
         await Store.create(storeinfoDB);
@@ -57,7 +56,6 @@ module.exports.connectTiendanube = async (req, res) => {
                     'User-Agent': 'picking-pro (nahuelezequiel20@gmail.com)'
                 }
             })
-        console.log(responseWHOne.data);
         if (!responseWHOne.data)
             res.json({ error: 'Could not connect to a webhook' });
 
@@ -170,14 +168,12 @@ module.exports.getConnectedStores = async (req, res) => {
 
 module.exports.handleWebhook = async (req, res) => {
     try {
-
-
         console.log(req.body);
         let body = req.body;
 
         //Busco la data de la store que se recibió la actualizacion
         let storeInfo = await Store.findOne({ user_id: body.store_id }).lean();
-
+        console.log("storeInfo: ",storeInfo);
         //Obtengo los datos de la nueva order o su actualizacion
         let { data } = await axios.get(`https://api.tiendanube.com/v1/${storeInfo.user_id}/orders/${body.id}?fields=id,store_id,billing_name,shipping_cost_owner,shipping_cost_customer,subtotal,discount,total,shipping_option,created_at,products,number,status,next_action,cancelled_at,note,owner_note,closed_at,read_at,status,payment_status,shipping_address,shipping_status,shipped_at,paid_at`, {
             headers: {
@@ -354,6 +350,7 @@ module.exports.getProductsToPack = async (req, res) => {
 
     try {
         console.log({ message: "Nueva solicitud de pedido para empaquetar" });
+
         const myRequest = JSON.parse(req.query.form);
         const token = req.query.token;
         const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado

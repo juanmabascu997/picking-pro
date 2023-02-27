@@ -10,7 +10,7 @@ function Config() {
       <CookieVerification />
       <StoreTable />
       <Box mt={2}>
-        <a href='https://www.tiendanube.com/apps/5385/authorize' underline="none">
+        <a href='https://www.tiendanube.com/apps/6152/authorize' underline="none">
           <Button variant="contained">
             Conectar
           </Button>

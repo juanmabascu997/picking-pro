@@ -5,9 +5,11 @@ const mongoose = require("mongoose");
 const app = express();
 
 /* --- CONFIGURACION DE BASE DE DATOS --- */
-const user = 'user_order';            //Configuro usuario
-const password = 'OyxrdEG10q5QW5Km';        //Configuro contraseña
-const uri = `mongodb+srv://${user}:${password}@cluster0.pe8iyp6.mongodb.net/picking-pro?retryWrites=true&w=majority`;             //Configuro uri
+// const user = 'user_order';            //Configuro usuario
+// const password = 'OyxrdEG10q5QW5Km';        //Configuro contraseña
+// const uri = `mongodb+srv://${user}:${password}@cluster0.pe8iyp6.mongodb.net/picking-pro?retryWrites=true&w=majority`;             //Configuro uri
+
+const uri = `mongodb://mongo:uRh3w0zN7QWo2nnuxPMC@containers-us-west-155.railway.app:7988`;
 
 mongoose.connect(uri,
     { useNewUrlParser: true, useUnifiedTopology: true }
@@ -16,8 +18,8 @@ mongoose.connect(uri,
     .catch(e => console.log(e))
 
 app.use(cors({
-    origin: ["https://pickingprocli.herokuapp.com"],
-//    origin: ["http://localhost:3000"],
+    //origin: ["https://pickingprocli.herokuapp.com", "http://localhost:3000"],
+    origin: ["http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true,
 }));
