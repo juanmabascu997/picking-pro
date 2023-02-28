@@ -18,8 +18,8 @@ mongoose.connect(uri,
     .catch(e => console.log(e))
 
 app.use(cors({
-    //origin: ["https://pickingprocli.herokuapp.com", "http://localhost:3000"],
-    origin: ["http://localhost:3000"],
+    origin: ["https://picking-pro-production.up.railway.app", "http://localhost:3000"],
+    // origin: ["http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true,
 }));

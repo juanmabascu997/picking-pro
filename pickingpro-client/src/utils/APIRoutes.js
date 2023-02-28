@@ -1,5 +1,5 @@
-export const host = "http://localhost:4000";
-//export const host = "https://pickingpro.herokuapp.com";
+// export const host = "http://localhost:4000";
+export const host = "https://picking-pro-production.up.railway.app";
 export const storeRoute = `${host}/api/connected-stores`;
 export const labelRoute = `${host}/api/label-print`;
 export const pickingProductsRoute = `${host}/api/picking-products`;
