@@ -47,7 +47,7 @@ module.exports.connectTiendanube = async (req, res) => {
             `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/webhooks`,
             {
                 event: 'order/paid',
-                url: 'https://pickingpro.herokuapp.com/api/wh-order'
+                url: 'https://picking-pro-production.up.railway.app/api/wh-order'
             },
             {
                 headers: {
@@ -65,7 +65,7 @@ module.exports.connectTiendanube = async (req, res) => {
             `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/webhooks`,
             {
                 event: 'order/packed',
-                url: 'https://pickingpro.herokuapp.com/api/wh-order'
+                url: 'https://picking-pro-production.up.railway.app/api/wh-order'
             },
             {
                 headers: {
@@ -85,7 +85,7 @@ module.exports.connectTiendanube = async (req, res) => {
             `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/webhooks`,
             {
                 event: 'order/fulfilled',
-                url: 'https://pickingpro.herokuapp.com/api/wh-order'
+                url: 'https://picking-pro-production.up.railway.app/api/wh-order'
             },
             {
                 headers: {
@@ -104,7 +104,7 @@ module.exports.connectTiendanube = async (req, res) => {
             `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/webhooks`,
             {
                 event: 'order/cancelled',
-                url: 'https://pickingpro.herokuapp.com/api/wh-order'
+                url: 'https://picking-pro-production.up.railway.app/api/wh-order'
             },
             {
                 headers: {
