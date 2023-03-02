@@ -351,7 +351,7 @@ module.exports.getProductsToPack = async (req, res) => {
     try {
         console.log({ message: "Nueva solicitud de pedido para empaquetar" });
 
-        const myRequest = JSON.parse(req.query.form);
+        const myRequest = req.query.form;
         const token = req.query.token;
         const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
         const userId = payload.id;
