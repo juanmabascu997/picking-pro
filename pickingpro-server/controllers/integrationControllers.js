@@ -220,7 +220,7 @@ module.exports.handleWebhook = async (req, res) => {
 
 module.exports.getProductsToPick = async (req, res) => {
     try {
-        const myRequest = JSON.parse(req.query.form);
+        const myRequest = req.query.form;
         const token = req.query.token;
         const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
         const userId = payload.id;
