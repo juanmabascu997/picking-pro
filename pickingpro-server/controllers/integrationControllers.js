@@ -384,9 +384,7 @@ module.exports.getProductsToPack = async (req, res) => {
             shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
             order_problem: null,
             // order_asigned_to: userId
-        }, null, {
-            limit: 1,
-        }).lean();
+        }, null).lean();
 
         //Si no encontré productos...
         if (!productToPack.length) {
@@ -394,6 +392,7 @@ module.exports.getProductsToPack = async (req, res) => {
             return;
         }
 
+        console.log(productToPack);
         // const myOrder = productToPack[0];
 
         // const storeDB = await Store.find({
