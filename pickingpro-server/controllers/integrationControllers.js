@@ -394,18 +394,18 @@ module.exports.getProductsToPack = async (req, res) => {
             return;
         }
 
-        const myOrder = productToPack[0];
+        // const myOrder = productToPack[0];
 
-        const storeDB = await Store.find({
-            user_id: myOrder.store_id
-        }).lean();          //Con lean convierto de documento a json!!
+        // const storeDB = await Store.find({
+        //     user_id: myOrder.store_id
+        // }).lean();          //Con lean convierto de documento a json!!
 
 
-        const name = storeDB[0].nombre;
+        // const name = storeDB[0].nombre;
 
-        myOrder.store_name = name;
+        // myOrder.store_name = name;
 
-        res.json(myOrder);
+        res.json(productToPack);
 
     } catch (err) {
         console.log(err);
