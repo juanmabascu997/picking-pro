@@ -248,7 +248,7 @@ module.exports.getProductsToPick = async (req, res) => {
         //Chekeo si el usuario tiene pedidos pickeados, sin empaquetar, sin problemas
         ordersDB = await Order.find({
             payment_status: 'paid',
-            order_picked: true,
+            order_picked: false,
             order_packed: false,
             shipping_status: 'unpacked',
             shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
