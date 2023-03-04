@@ -228,22 +228,22 @@ module.exports.getProductsToPick = async (req, res) => {
         let ordersDB = {};
 
 
-        let shippingOptions = {
-            '$regex': 'Envío en',
-            '$options': 'i'
-        };
+        // let shippingOptions = {
+        //     '$regex': 'Envío en',
+        //     '$options': 'i'
+        // };
 
-        if (myRequest.envio == 'cod') {
-            shippingOptions = {
-                '$regex': 'Pago Contraentrega',
-                '$options': 'i'
-            }
-        }
-        if (myRequest.envio == 'bluemail')
-            shippingOptions = {
-                '$regex': 'bluemail',
-                '$options': 'i'
-            }
+        // if (myRequest.envio == 'cod') {
+        //     shippingOptions = {
+        //         '$regex': 'Pago Contraentrega',
+        //         '$options': 'i'
+        //     }
+        // }
+        // if (myRequest.envio == 'bluemail')
+        //     shippingOptions = {
+        //         '$regex': 'bluemail',
+        //         '$options': 'i'
+        //     }
 
         //Chekeo si el usuario tiene pedidos pickeados, sin empaquetar, sin problemas
         ordersDB = await Order.find({
@@ -251,9 +251,9 @@ module.exports.getProductsToPick = async (req, res) => {
             order_picked: true,
             order_packed: false,
             shipping_status: 'unpacked',
-            shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
             order_problem: null,
-            order_asigned_to: userId
+            order_picked_for: userId,
+            // order_packed_for: userId
         }, {
             products: 1,
             id: 1,
@@ -280,9 +280,8 @@ module.exports.getProductsToPick = async (req, res) => {
                 order_picked: false,
                 order_packed: false,
                 shipping_status: 'unpacked',
-                shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
                 order_problem: null,
-                order_asigned_to: null
+                order_picked_for: null
             }, {
                 products: 1,
                 id: 1,
@@ -357,31 +356,32 @@ module.exports.getProductsToPack = async (req, res) => {
         const userId = payload.id;
 
         //Si es envío en el día...
-        let shippingOptions = {
-            '$regex': 'Envío en',
-            '$options': 'i'
-        };
 
-        //Si es envío por bluemail...
-        if (myRequest.envio == 'bluemail')
-            shippingOptions = {
-                '$regex': 'bluemail',
-                '$options': 'i'
-            }
+        // let shippingOptions = {
+        //     '$regex': 'Envío en',
+        //     '$options': 'i'
+        // };
 
-        //Si es envío COD...
-        if (myRequest.envio == 'cod')
-            shippingOptions = {
-                '$regex': 'efectivo',
-                '$options': 'i'
-            }
+        // //Si es envío por bluemail...
+        // if (myRequest.envio == 'bluemail')
+        //     shippingOptions = {
+        //         '$regex': 'bluemail',
+        //         '$options': 'i'
+        //     }
+
+        // //Si es envío COD...
+        // if (myRequest.envio == 'cod')
+        //     shippingOptions = {
+        //         '$regex': 'efectivo',
+        //         '$options': 'i'
+        //     }
 
         const productToPack = await Order.find({
             payment_status: 'paid',
             order_picked: true,
             order_packed: false,
             shipping_status: 'unpacked',
-            shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
+            // shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
             order_problem: null,
             // order_asigned_to: userId
         }, null).lean();
@@ -393,17 +393,17 @@ module.exports.getProductsToPack = async (req, res) => {
         }
 
         console.log(productToPack);
-        // const myOrder = productToPack[0];
+        const myOrder = productToPack[0];
 
-        // const storeDB = await Store.find({
-        //     user_id: myOrder.store_id
-        // }).lean();          //Con lean convierto de documento a json!!
+        const storeDB = await Store.find({
+            user_id: myOrder.store_id
+        }).lean();          //Con lean convierto de documento a json!!
 
 
-        // const name = storeDB[0].nombre;
+        const name = storeDB[0].nombre;
 
-        // myOrder.store_name = name;
-
+        myOrder.store_name = name;
+        //FIJAR ACA
         res.json(productToPack);
 
     } catch (err) {
