@@ -282,8 +282,6 @@ module.exports.getProductsToPick = async (req, res) => {
                 order_packed: false,
                 shipping_status: 'unpacked',
                 order_problem: null,
-                order_asigned_to: userId
-
                 // order_picked_for: null
             }, {
                 products: 1,
