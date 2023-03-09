@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getLabelToPrint, connectTiendanube, getConnectedStores, handleWebhook, getProductsToPick, getProductsToPack, reportProblem, packOrder, getOrdersWithProblem, solveProblem, getOrdersToShip } = require("../controllers/integrationControllers");
+const { getLabelToPrint, connectTiendanube, getConnectedStores, handleWebhook, getProductsToPick, setProductsPicked, getProductsToPack, reportProblem, packOrder, getOrdersWithProblem, solveProblem, getOrdersToShip } = require("../controllers/integrationControllers");
 
 router.get('/', (req, res) => res.json({message: "Inicio de API"}));
 
@@ -9,6 +9,8 @@ router.get('/connect', connectTiendanube);
 router.get('/connected-stores', getConnectedStores);
 
 router.get('/picking-products', getProductsToPick);
+
+router.get('/set-picked-products', setProductsPicked);
 
 router.get('/packing-products', getProductsToPack);
 

@@ -248,7 +248,7 @@ module.exports.getProductsToPick = async (req, res) => {
         //Chekeo si el usuario tiene pedidos pickeados, sin empaquetar, sin problemas
         ordersDB = await Order.find({
             payment_status: 'paid',
-            order_picked: true,
+            order_picked: false,
             order_packed: false,
             shipping_status: 'unpacked',
             order_problem: null,
@@ -293,7 +293,7 @@ module.exports.getProductsToPick = async (req, res) => {
         }
 
         if (!ordersDB.length)                          //Si no hay pedidos para empaquetar, respondo
-            res.json({ 'err': 'No products to pick' });
+            res.json([]);
         else {
             for (var i = 0; i < ordersDB.length; i++) {             //Creo my array de objetos válidos
                 for (var j = 0; j < ordersDB[i].products.length; j++) {
@@ -321,16 +321,34 @@ module.exports.getProductsToPick = async (req, res) => {
             console.log(ordersDB);
 
             for (let i = 0; i < ordersDB.length; i++) {               //Updateo mi database con la data del usuario
-                const result = await Order.findOneAndUpdate({ id: ordersDB[i].id }, { order_picked: true, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
+                // const result = await Order.findOneAndUpdate({ id: ordersDB[i].id }, { order_picked: true, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
+                const result = await Order.findOneAndUpdate({ id: ordersDB[i].id }, { order_picked: false, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
             }
 
-            res.json(productsToPick);
+            res.json({productsToPick,ordersDB});
         }
 
     } catch (e) {
         console.log(e);
     }
 }
+
+module.exports.setProductsPicked = async (req, res) => {
+    try{
+        const myProducts = req.query.products;
+        const userId = req.query.token;
+
+        console.log(myProducts);
+        for (let i = 0; i < myProducts.length; i++) {               //Updateo mi database con la data del usuario
+            const result = await Order.findOneAndUpdate({ id: myProducts[i].id }, { order_picked: true, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
+        }
+        
+        res.json("Exito!");
+    } catch (e) {
+        console.log(e);
+    }
+}
+
 
 module.exports.getProductsToPack = async (req, res) => {
     /* Consulta a la base de datos por:
@@ -356,27 +374,6 @@ module.exports.getProductsToPack = async (req, res) => {
         const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
         const userId = payload.id;
 
-        //Si es envío en el día...
-
-        // let shippingOptions = {
-        //     '$regex': 'Envío en',
-        //     '$options': 'i'
-        // };
-
-        // //Si es envío por bluemail...
-        // if (myRequest.envio == 'bluemail')
-        //     shippingOptions = {
-        //         '$regex': 'bluemail',
-        //         '$options': 'i'
-        //     }
-
-        // //Si es envío COD...
-        // if (myRequest.envio == 'cod')
-        //     shippingOptions = {
-        //         '$regex': 'efectivo',
-        //         '$options': 'i'
-        //     }
-
         const productToPack = await Order.find({
             payment_status: 'paid',
             order_picked: true,
@@ -384,7 +381,7 @@ module.exports.getProductsToPack = async (req, res) => {
             shipping_status: 'unpacked',
             // shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
             order_problem: null,
-            // order_asigned_to: userId
+            // order_asigned_to: null
         }, null).lean();
 
         //Si no encontré productos...
