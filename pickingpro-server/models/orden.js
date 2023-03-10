@@ -32,6 +32,14 @@ const orderSchema = new Schema({
     paid_at: Date,
     order_picked: Boolean,
     order_packed: Boolean,
+    order_picked_for: {
+        type: String,
+        default: null,
+    },
+    order_packed_for: {
+        type: String,
+        default: null,
+    },
     order_asigned_to: String,
     order_problem: String,
     order_controlled: Boolean,

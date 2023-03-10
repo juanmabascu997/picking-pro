@@ -263,7 +263,6 @@ module.exports.getProductsToPick = async (req, res) => {
             limit: myRequest.pedidos,
         }).lean();
 
-        console.log(ordersDB);
 
         if (!ordersDB.length) {                         //Si no los tiene, le asigno nuevos
             console.log("No products picked yet by user", userId);
@@ -282,7 +281,7 @@ module.exports.getProductsToPick = async (req, res) => {
                 order_packed: false,
                 shipping_status: 'unpacked',
                 order_problem: null,
-                // order_picked_for: null
+                order_picked_for: null
             }, {
                 products: 1,
                 id: 1,
@@ -318,8 +317,6 @@ module.exports.getProductsToPick = async (req, res) => {
                 }
             }
 
-            console.log(ordersDB);
-
             for (let i = 0; i < ordersDB.length; i++) {               //Updateo mi database con la data del usuario
                 // const result = await Order.findOneAndUpdate({ id: ordersDB[i].id }, { order_picked: true, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
                 const result = await Order.findOneAndUpdate({ id: ordersDB[i].id }, { order_picked: false, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
@@ -340,7 +337,7 @@ module.exports.setProductsPicked = async (req, res) => {
 
         console.log(myProducts);
         for (let i = 0; i < myProducts.length; i++) {               //Updateo mi database con la data del usuario
-            const result = await Order.findOneAndUpdate({ id: myProducts[i].id }, { order_picked: true, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
+            const result = await Order.findOneAndUpdate({ id: myProducts[i].id }, { order_picked: true, order_asigned_to: null, order_picked_for: userId, picked_at: (new Date().toISOString()) });
         }
         
         res.json("Exito!");
@@ -381,7 +378,7 @@ module.exports.getProductsToPack = async (req, res) => {
             shipping_status: 'unpacked',
             // shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
             order_problem: null,
-            // order_asigned_to: null
+            order_asigned_to: null
         }, null).lean();
 
         //Si no encontré productos...
@@ -390,7 +387,6 @@ module.exports.getProductsToPack = async (req, res) => {
             return;
         }
 
-        console.log(productToPack);
         const myOrder = productToPack[0];
 
         const storeDB = await Store.find({
