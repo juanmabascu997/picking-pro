@@ -346,6 +346,7 @@ module.exports.getProductsToPick = async (req, res) => {
               variant_id: parseInt(ordersDB[i].products[j].variant_id),
               sku: ordersDB[i].products[j].sku,
               barcode: ordersDB[i].products[j].barcode,
+              id: ordersDB[i].id
             };
 
             productsToPick.push(data);
@@ -370,7 +371,7 @@ module.exports.getProductsToPick = async (req, res) => {
         );
       }
 
-      res.status(200).json({ productsToPick, ordersDB });
+      res.status(200).json(productsToPick);
     }
   } catch (error) {
     res.status(400).json({
