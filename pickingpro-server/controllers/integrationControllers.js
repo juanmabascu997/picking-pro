@@ -235,9 +235,11 @@ module.exports.handleWebhook = async (req, res) => {
       await Order.create(orderinfoDB);
     }
 
-    res.sendStatus(200);
-  } catch (err) {
-    console.log(err);
+    res.status(200).json(true);
+  } catch (error) {
+    res.status(400).json({
+        error: error,
+    });
   }
 };
 
@@ -323,7 +325,7 @@ module.exports.getProductsToPick = async (req, res) => {
 
     if (!ordersDB.length)
       //Si no hay pedidos para empaquetar, respondo
-      res.json([]);
+      res.status(200).json([]);
     else {
       for (var i = 0; i < ordersDB.length; i++) {
         //Creo my array de objetos válidos
@@ -368,10 +370,12 @@ module.exports.getProductsToPick = async (req, res) => {
         );
       }
 
-      res.json({ productsToPick, ordersDB });
+      res.status(200).json({ productsToPick, ordersDB });
     }
-  } catch (e) {
-    console.log(e);
+  } catch (error) {
+    res.status(400).json({
+        error: error,
+    });
   }
 };
 
@@ -394,9 +398,11 @@ module.exports.setProductsPicked = async (req, res) => {
       );
     }
 
-    res.json("Exito!");
-  } catch (e) {
-    console.log(e);
+    res.status(200).json("Exito!");
+  } catch (error) {
+    res.status(400).json({
+        error: error,
+    });
   }
 };
 
@@ -432,14 +438,13 @@ module.exports.getProductsToPack = async (req, res) => {
         shipping_status: "unpacked",
         // shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
         order_problem: null,
-        order_asigned_to: null,
       },
       null
     ).lean();
 
     //Si no encontré productos...
     if (!productToPack.length) {
-      res.json("No product to pack");
+      res.status(200).json("No product to pack");
       return;
     }
 
@@ -453,10 +458,11 @@ module.exports.getProductsToPack = async (req, res) => {
 
     myOrder.store_name = name;
     //FIJAR ACA
-    res.json(productToPack);
-  } catch (err) {
-    console.log(err);
-    res.json({ err: "error has been ocurred" });
+    res.status(200).json(productToPack);
+  } catch (error) {
+    res.status(400).json({
+        error: error,
+    });
   }
 };
 
@@ -469,10 +475,11 @@ module.exports.reportProblem = async (req, res) => {
 
     await Order.findOneAndUpdate(filter, { order_problem: myProblem.value });
 
-    res.json({ status: "ok", data: myProblem.value });
+    res.status(200).json({ status: "ok", data: myProblem.value });
   } catch (error) {
-    console.log(error);
-    res.json({ message: "Error has been ocurred" });
+    res.status(400).json({
+        error: error,
+    });
   }
 };
 
@@ -482,17 +489,21 @@ module.exports.isBeingPackagedBy = async (req, res) => {
     const token = req.body.token;
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
-    //La orden esta siendo empaquetada por: userId
 
-    const orderPacked = await Order.findOneAndUpdate(
-      { id: myRequest.id },
-      { order_asigned_to: userId }
-    );
-
-    res.json(true);
+    //Controlo que la orden no este asignada a otro usuario:
+    const product = await Order.find({ id: myRequest.id });
+    if (product[0].order_asigned_to == null) {
+        const orderPacked = await Order.findOneAndUpdate(
+            { id: myRequest.id },
+            { order_asigned_to: userId }
+          );
+        res.json(true);
+    } 
+    else if (product[0].order_asigned_to !== userId) {
+        res.json("El producto esta asignado a otro usuario.");
+    }
   } catch (error) {
-    console.log(error);
-    res.json(false);
+    console.error(error)
   }
 };
 
@@ -505,10 +516,12 @@ module.exports.stopBeingPackaged = async (req, res) => {
       { order_asigned_to: null }
     );
 
-    res.json(true);
+    res.status(200).json(true);
   } catch (error) {
     console.log(error);
-    res.json(false);
+    res.status(400).json({
+      error: error,
+    });
   }
 };
 
@@ -548,9 +561,11 @@ module.exports.packOrder = async (req, res) => {
       }
     );
 
-    res.json("ok");
+    res.status(200).json(true);
   } catch (error) {
-    console.log(error);
+    res.status(400).json({
+        error: error,
+    });
   }
 };
 
@@ -560,10 +575,12 @@ module.exports.getOrdersWithProblem = async (req, res) => {
       order_problem: { $ne: null },
     }).lean();
     console.log(ordersWithProblem);
-    res.json(ordersWithProblem);
+    res.status(200).json(ordersWithProblem);
   } catch (error) {
     console.log(error);
-    res.json({ message: "Error has been ocurred" });
+    res.status(400).json({
+        error: error,
+    });
   }
 };
 
@@ -580,9 +597,11 @@ module.exports.solveProblem = async (req, res) => {
     );
 
     console.log(orderSolved);
-    res.json({ message: "Order updated" });
+    res.status(200).json({ message: "Order updated" });
   } catch (error) {
-    res.json({ err: "Error has been ocurred" });
+    res.status(400).json({
+        error: error,
+    });
   }
 };
 
@@ -617,9 +636,11 @@ module.exports.getOrdersToShip = async (req, res) => {
 
     const ordersToShip = ordersToShipOne.concat(ordersToShipTwo);
 
-    res.json(ordersToShip);
+    res.status(200).json(ordersToShip);
   } catch (error) {
     console.log(error);
-    res.json({ message: "Error querying datablase" });
+    res.status(400).json({
+        error: error,
+    });
   }
 };
