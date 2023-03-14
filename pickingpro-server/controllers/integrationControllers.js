@@ -320,6 +320,7 @@ module.exports.getProductsToPick = async (req, res) => {
           shipping_status: "unpacked",
           order_problem: null,
           order_picked_for: null,
+          order_asigned_to: null,
         },
         {
           products: 1,
