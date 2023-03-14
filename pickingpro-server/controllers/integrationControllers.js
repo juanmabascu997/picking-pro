@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const { writeFile } = require("fs/promises");
 const fs = require("fs");
 const { response } = require("express");
+const User = require("../models/user");
 
 module.exports.connectTiendanube = async (req, res) => {
   try {
@@ -230,6 +231,7 @@ module.exports.handleWebhook = async (req, res) => {
       orderinfoDB.order_picked = false;
       orderinfoDB.order_packed = false;
       orderinfoDB.order_asigned_to = null;
+      orderinfoDB.order_asigned_to_name = null;
       orderinfoDB.order_problem = null;
       orderinfoDB.order_controlled = false;
       await Order.create(orderinfoDB);
@@ -269,6 +271,12 @@ module.exports.getProductsToPick = async (req, res) => {
     //         '$options': 'i'
     //     }
 
+    usuarioInfo = await User.find(
+      {
+        _id: userId,
+      },
+    ).lean();
+
     //Chekeo si el usuario tiene pedidos pickeados, sin empaquetar, sin problemas
     ordersDB = await Order.find(
       {
@@ -278,6 +286,7 @@ module.exports.getProductsToPick = async (req, res) => {
         shipping_status: "unpacked",
         order_problem: null,
         order_asigned_to: userId,
+        order_asigned_to_name: usuarioInfo.name,
         // order_picked_for: userId,
         // order_packed_for: userId
       },
@@ -361,11 +370,18 @@ module.exports.getProductsToPick = async (req, res) => {
       for (let i = 0; i < ordersDB.length; i++) {
         //Updateo mi database con la data del usuario
         // const result = await Order.findOneAndUpdate({ id: ordersDB[i].id }, { order_picked: true, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
+        usuarioInfo = await User.find(
+            {
+              _id: userId,
+            },
+        ).lean();
+
         const result = await Order.findOneAndUpdate(
           { id: ordersDB[i].id },
           {
             order_picked: false,
             order_asigned_to: userId,
+            order_asigned_to_name: usuarioInfo.name,
             picked_at: new Date().toISOString(),
           }
         );
@@ -393,6 +409,7 @@ module.exports.setProductsPicked = async (req, res) => {
         {
           order_picked: true,
           order_asigned_to: null,
+          order_asigned_to_name: null,
           order_picked_for: userId,
           picked_at: new Date().toISOString(),
         }
@@ -494,9 +511,14 @@ module.exports.isBeingPackagedBy = async (req, res) => {
     //Controlo que la orden no este asignada a otro usuario:
     const product = await Order.find({ id: myRequest.id });
     if (product[0].order_asigned_to == null) {
+        usuarioInfo = await User.find(
+          {
+            _id: userId,
+          },
+        ).lean();
         const orderPacked = await Order.findOneAndUpdate(
             { id: myRequest.id },
-            { order_asigned_to: userId }
+            { order_asigned_to: userId, order_asigned_to_name: usuarioInfo.name }
           );
         res.json(true);
     } 
@@ -514,7 +536,7 @@ module.exports.stopBeingPackaged = async (req, res) => {
 
     const orderPacked = await Order.findOneAndUpdate(
       { id: myRequest.id },
-      { order_asigned_to: null }
+      { order_asigned_to: null, order_asigned_to_name: null }
     );
 
     res.status(200).json(true);
@@ -594,7 +616,7 @@ module.exports.solveProblem = async (req, res) => {
     //Updateo la orden en mi base de datos. No asignada a nadie, y sin problema.
     const orderSolved = await Order.findOneAndUpdate(
       { id: myRequest.id },
-      { order_asigned_to: null, order_picked: false, order_problem: null }
+      { order_asigned_to: null, order_asigned_to_name: null, order_picked: false, order_problem: null }
     );
 
     console.log(orderSolved);

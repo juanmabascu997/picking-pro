@@ -40,7 +40,14 @@ const orderSchema = new Schema({
         type: String,
         default: null,
     },
-    order_asigned_to: String,
+    order_asigned_to: {
+        type: String,
+        default: null,
+    },
+    order_asigned_to_name: {
+        type: String,
+        default: null,
+    },
     order_problem: String,
     order_controlled: Boolean,
     packed_at: Date,
