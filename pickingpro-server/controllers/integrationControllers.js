@@ -357,7 +357,6 @@ module.exports.getProductsToPick = async (req, res) => {
               barcode: ordersDB[i].products[j].barcode,
               id: ordersDB[i].id
             };
-
             productsToPick.push(data);
           } else {
             productsToPick[pos].quantity += parseInt(
