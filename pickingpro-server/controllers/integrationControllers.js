@@ -488,9 +488,9 @@ module.exports.reportProblem = async (req, res) => {
   try {
     const myProblem = req.body;
     console.log("Solicitud de reporte: ", myProblem);
-    const filter = { id: myProblem.myProblem.id };
+    const filter = { id: myProblem.id };
 
-    const result = await Order.findOneAndUpdate(filter, { order_problem: myProblem.myProblem.value });
+    const result = await Order.findOneAndUpdate(filter, { order_problem: myProblem.value, order_asigned_to: null, order_asigned_to_name: null });
 
     res.status(200).json({ status: "ok", data: result });
   } catch (error) {
