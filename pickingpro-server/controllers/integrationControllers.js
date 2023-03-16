@@ -486,14 +486,13 @@ module.exports.getProductsToPack = async (req, res) => {
 
 module.exports.reportProblem = async (req, res) => {
   try {
-    const myProblem = req.body;
-    console.log(myProblem);
+    const myProblem = req.body.myProblem;
 
     const filter = { id: myProblem.id };
 
-    await Order.findOneAndUpdate(filter, { order_problem: myProblem.value });
+    const result = await Order.findOneAndUpdate(filter, { order_problem: myProblem.value });
 
-    res.status(200).json({ status: "ok", data: myProblem.value });
+    res.status(200).json({ status: "ok", data: result });
   } catch (error) {
     res.status(400).json({
         error: error,
