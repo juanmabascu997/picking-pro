@@ -49,6 +49,10 @@ const orderSchema = new Schema({
         default: null,
     },
     order_problem: String,
+    order_problem_by: {
+        type: String,
+        default: null,
+    },
     order_controlled: Boolean,
     packed_at: Date,
     picked_at: Date
