@@ -598,10 +598,12 @@ module.exports.packOrder = async (req, res) => {
 
 module.exports.getOrdersWithProblem = async (req, res) => {
   try {
+
     const ordersWithProblem = await Order.find({
       order_problem: { $ne: null },
     }).lean();
-    console.log(ordersWithProblem);
+    console.log("Traer ordenes con problemas:", ordersWithProblem);
+
     res.status(200).json(ordersWithProblem);
   } catch (error) {
     console.log(error);
@@ -615,16 +617,15 @@ module.exports.solveProblem = async (req, res) => {
   try {
     /* Formato de myRequest: {id} */
     const myRequest = req.body;
-    console.log(myRequest);
+    console.log("Resolver problema: ",myRequest);
 
     //Updateo la orden en mi base de datos. No asignada a nadie, y sin problema.
     const orderSolved = await Order.findOneAndUpdate(
       { id: myRequest.id },
-      { order_asigned_to: null, order_asigned_to_name: null, order_picked: false, order_problem: null }
+      { order_asigned_to: null, order_asigned_to_name: null, order_picked: true, order_problem: null, order_problem_by: null }
     );
 
-    console.log(orderSolved);
-    res.status(200).json({ message: "Order updated" });
+    res.status(200).json(orderSolved);
   } catch (error) {
     res.status(400).json({
         error: error,
