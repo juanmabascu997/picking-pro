@@ -254,23 +254,6 @@ module.exports.getProductsToPick = async (req, res) => {
     var productsToPick = [];
     let ordersDB = {};
 
-    // let shippingOptions = {
-    //     '$regex': 'Envío en',
-    //     '$options': 'i'
-    // };
-
-    // if (myRequest.envio == 'cod') {
-    //     shippingOptions = {
-    //         '$regex': 'Pago Contraentrega',
-    //         '$options': 'i'
-    //     }
-    // }
-    // if (myRequest.envio == 'bluemail')
-    //     shippingOptions = {
-    //         '$regex': 'bluemail',
-    //         '$options': 'i'
-    //     }
-
     let usuarioInfo = await User.find({
       _id: userId,
     }).lean();
