@@ -3,6 +3,8 @@ const { getUserData, getProductData } = require('../controllers/infoControllers'
 const router = express.Router();
 
 router.get('/user-data', getUserData);
+router.get('/store-data', getStoreData);
+
 router.get('/product-data', getProductData);
 
 

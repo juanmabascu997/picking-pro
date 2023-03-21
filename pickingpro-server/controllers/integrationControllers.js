@@ -240,7 +240,7 @@ module.exports.handleWebhook = async (req, res) => {
     res.status(200).json(true);
   } catch (error) {
     res.status(400).json({
-        error: error,
+      error: error,
     });
   }
 };
@@ -271,11 +271,9 @@ module.exports.getProductsToPick = async (req, res) => {
     //         '$options': 'i'
     //     }
 
-    let usuarioInfo = await User.find(
-      {
-        _id: userId,
-      },
-    ).lean();
+    let usuarioInfo = await User.find({
+      _id: userId,
+    }).lean();
 
     //Chekeo si el usuario tiene pedidos pickeados, sin empaquetar, sin problemas
     ordersDB = await Order.find(
@@ -356,7 +354,7 @@ module.exports.getProductsToPick = async (req, res) => {
               variant_id: parseInt(ordersDB[i].products[j].variant_id),
               sku: ordersDB[i].products[j].sku,
               barcode: ordersDB[i].products[j].barcode,
-              id: ordersDB[i].id
+              id: ordersDB[i].id,
             };
             productsToPick.push(data);
           } else {
@@ -370,11 +368,9 @@ module.exports.getProductsToPick = async (req, res) => {
       for (let i = 0; i < ordersDB.length; i++) {
         //Updateo mi database con la data del usuario
         // const result = await Order.findOneAndUpdate({ id: ordersDB[i].id }, { order_picked: true, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
-        let usuarioInfo = await User.find(
-            {
-              _id: userId,
-            },
-        ).lean();
+        let usuarioInfo = await User.find({
+          _id: userId,
+        }).lean();
 
         const result = await Order.findOneAndUpdate(
           { id: ordersDB[i].id },
@@ -391,7 +387,7 @@ module.exports.getProductsToPick = async (req, res) => {
     }
   } catch (error) {
     res.status(400).json({
-        error: error,
+      error: error,
     });
   }
 };
@@ -419,7 +415,7 @@ module.exports.setProductsPicked = async (req, res) => {
     res.status(200).json("Exito!");
   } catch (error) {
     res.status(400).json({
-        error: error,
+      error: error,
     });
   }
 };
@@ -479,7 +475,7 @@ module.exports.getProductsToPack = async (req, res) => {
     res.status(200).json(productToPack);
   } catch (error) {
     res.status(400).json({
-        error: error,
+      error: error,
     });
   }
 };
@@ -494,13 +490,17 @@ module.exports.reportProblem = async (req, res) => {
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
 
-
-    const result = await Order.findOneAndUpdate(filter, { order_problem: myProblem.value, order_problem_by: userId, order_asigned_to: null, order_asigned_to_name: null });
+    const result = await Order.findOneAndUpdate(filter, {
+      order_problem: myProblem.value,
+      order_problem_by: userId,
+      order_asigned_to: null,
+      order_asigned_to_name: null,
+    });
 
     res.status(200).json({ status: "ok", data: result });
   } catch (error) {
     res.status(400).json({
-        error: error,
+      error: error,
     });
   }
 };
@@ -515,22 +515,19 @@ module.exports.isBeingPackagedBy = async (req, res) => {
     //Controlo que la orden no este asignada a otro usuario:
     const product = await Order.find({ id: myRequest.id });
     if (product[0].order_asigned_to == null) {
-        let usuarioInfo = await User.find(
-          {
-            _id: userId,
-          },
-        ).lean();
-        const orderPacked = await Order.findOneAndUpdate(
-            { id: myRequest.id },
-            { order_asigned_to: userId, order_asigned_to_name: usuarioInfo[0].name }
-          );
-        res.json(true);
-    } 
-    else if (product[0].order_asigned_to !== userId) {
-        res.json("El producto esta asignado a otro usuario.");
+      let usuarioInfo = await User.find({
+        _id: userId,
+      }).lean();
+      const orderPacked = await Order.findOneAndUpdate(
+        { id: myRequest.id },
+        { order_asigned_to: userId, order_asigned_to_name: usuarioInfo[0].name }
+      );
+      res.json(true);
+    } else if (product[0].order_asigned_to !== userId) {
+      res.json("El producto esta asignado a otro usuario.");
     }
   } catch (error) {
-    console.error(error)
+    console.error(error);
   }
 };
 
@@ -591,14 +588,13 @@ module.exports.packOrder = async (req, res) => {
     res.status(200).json(true);
   } catch (error) {
     res.status(400).json({
-        error: error,
+      error: error,
     });
   }
 };
 
 module.exports.getOrdersWithProblem = async (req, res) => {
   try {
-
     const ordersWithProblem = await Order.find({
       order_problem: { $ne: null },
     }).lean();
@@ -608,7 +604,7 @@ module.exports.getOrdersWithProblem = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(400).json({
-        error: error,
+      error: error,
     });
   }
 };
@@ -617,18 +613,24 @@ module.exports.solveProblem = async (req, res) => {
   try {
     /* Formato de myRequest: {id} */
     const myRequest = req.body;
-    console.log("Resolver problema: ",myRequest);
+    console.log("Resolver problema: ", myRequest);
 
     //Updateo la orden en mi base de datos. No asignada a nadie, y sin problema.
     const orderSolved = await Order.findOneAndUpdate(
       { id: myRequest.id },
-      { order_asigned_to: null, order_asigned_to_name: null, order_picked: true, order_problem: null, order_problem_by: null }
+      {
+        order_asigned_to: null,
+        order_asigned_to_name: null,
+        order_picked: true,
+        order_problem: null,
+        order_problem_by: null,
+      }
     );
 
     res.status(200).json(orderSolved);
   } catch (error) {
     res.status(400).json({
-        error: error,
+      error: error,
     });
   }
 };
@@ -644,31 +646,31 @@ module.exports.getOrdersToShip = async (req, res) => {
       shipping_status: "unshipped",
       next_action: "waiting_shipment",
       order_controlled: false,
-      shipping_option: {
-        $regex: "Envío en",
-        $options: "i",
-      },
+      // shipping_option: {
+      //   $regex: "Envío en",
+      //   $options: "i",
+      // },
     }).lean();
 
-    const ordersToShipTwo = await Order.find({
-      order_picked: true,
-      order_packed: true,
-      shipping_status: "unshipped",
-      next_action: "waiting_shipment",
-      order_controlled: false,
-      shipping_option: {
-        $regex: "Pago Contraentrega",
-        $options: "i",
-      },
-    }).lean();
+    // const ordersToShipTwo = await Order.find({
+    //   order_picked: true,
+    //   order_packed: true,
+    //   shipping_status: "unshipped",
+    //   next_action: "waiting_shipment",
+    //   order_controlled: false,
+    //   shipping_option: {
+    //     $regex: "Pago Contraentrega",
+    //     $options: "i",
+    //   },
+    // }).lean();
 
-    const ordersToShip = ordersToShipOne.concat(ordersToShipTwo);
+    // const ordersToShip = ordersToShipOne.concat(ordersToShipTwo);
 
-    res.status(200).json(ordersToShip);
+    res.status(200).json(ordersToShipOne);
   } catch (error) {
     console.log(error);
     res.status(400).json({
-        error: error,
+      error: error,
     });
   }
 };

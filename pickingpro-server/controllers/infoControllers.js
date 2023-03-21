@@ -10,6 +10,7 @@ module.exports.getUserData = async (req, res) => {
         const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
         const userId = payload.id;
 
+        let storeInfo = await Store.findOne({ user_id: body.store_id }).lean();
         usuarioInfo = await User.find(
             {
               _id: userId,
@@ -22,6 +23,18 @@ module.exports.getUserData = async (req, res) => {
     }
 }
 
+
+module.exports.getStoreData = async (req, res) => {
+    try {
+        const storeId = req.query.store_id;
+        
+        let storeInfo = await Store.findOne({ user_id: storeId }).lean();
+
+        res.json(storeInfo);
+    } catch (error) {
+        res.json({err: "Error has been ocurred"});
+    }
+}
 
 module.exports.getProductData = async (req, res) => {
     const myRequest = req.query;
