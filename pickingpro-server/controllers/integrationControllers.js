@@ -444,16 +444,16 @@ module.exports.getProductsToPack = async (req, res) => {
       res.status(200).json("No product to pack");
       return;
     }
+    
+    for (let i = 0; i < productToPack.length; i++) {
+      const storeDB = await Store.find({
+        user_id: productToPack[i].store_id,
+      }).lean(); //Con lean convierto de documento a json!!
 
-    const myOrder = productToPack[0];
-
-    const storeDB = await Store.find({
-      user_id: myOrder.store_id,
-    }).lean(); //Con lean convierto de documento a json!!
-
-    const name = storeDB[0].nombre;
-
-    myOrder.store_name = name;
+      const name = storeDB[0].nombre;
+      
+      productToPack[i].store_name = name;
+    }
     //FIJAR ACA
     res.status(200).json(productToPack);
   } catch (error) {
