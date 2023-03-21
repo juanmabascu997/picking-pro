@@ -26,13 +26,14 @@ module.exports.getUserData = async (req, res) => {
 
 module.exports.getStoreData = async (req, res) => {
     try {
-        const storeId = req.query.store_id;
+        const storeId = req.query;
+        console.log("Traer Store info:", storeId);
         
-        let storeInfo = await Store.findOne({ user_id: storeId }).lean();
-
+        let storeInfo = await Store.findOne({ user_id: storeId.store_id }).lean();
+        
         res.json(storeInfo);
     } catch (error) {
-        res.json({err: "Error has been ocurred"});
+        res.json({err: "Error has been ocurred" + error});
     }
 }
 
