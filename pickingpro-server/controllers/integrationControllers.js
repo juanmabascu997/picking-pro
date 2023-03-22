@@ -380,7 +380,7 @@ module.exports.setProductsPicked = async (req, res) => {
     const myProducts = req.query.products;
     const userId = req.query.token;
 
-    console.log(myProducts);
+    console.log("Post productos pickeados: ",myProducts);
     for (let i = 0; i < myProducts.length; i++) {
       //Updateo mi database con la data del usuario
       const result = await Order.findOneAndUpdate(
@@ -525,7 +525,6 @@ module.exports.stopBeingPackaged = async (req, res) => {
 
     res.status(200).json(true);
   } catch (error) {
-    console.log(error);
     res.status(400).json({
       error: error,
     });
@@ -535,14 +534,12 @@ module.exports.stopBeingPackaged = async (req, res) => {
 module.exports.packOrder = async (req, res) => {
   try {
     /* Formato de myRequest: {id, store_id} */
-    const myRequest = req.body.myRequest;
-    const token = req.body.token;
-    const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
-    const userId = payload.id;
+    const myRequest = req.body;
+    const userId = req.body.token;
 
     //Busco el token de la store que se recibió la actualizacion
     let storeInfo = await Store.findOne({ user_id: myRequest.store_id }).lean();
-
+    console.log("Empaquetar orden: ", myRequest.id);
     //POSTeo en tiendanube que empaquete la orden
     const { data } = await axios.post(
       `https://api.tiendanube.com/v1/${myRequest.store_id}/orders/${myRequest.id}/pack`,
@@ -585,7 +582,6 @@ module.exports.getOrdersWithProblem = async (req, res) => {
 
     res.status(200).json(ordersWithProblem);
   } catch (error) {
-    console.log(error);
     res.status(400).json({
       error: error,
     });
@@ -651,7 +647,6 @@ module.exports.getOrdersToShip = async (req, res) => {
 
     res.status(200).json(ordersToShipOne);
   } catch (error) {
-    console.log(error);
     res.status(400).json({
       error: error,
     });

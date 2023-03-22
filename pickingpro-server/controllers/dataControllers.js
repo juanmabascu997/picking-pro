@@ -7,7 +7,7 @@ module.exports.getDashboardData = async (req, res) => {
     /* Recibo el id del usuario que mando la peticion */
 
     const myRequest = req.query;
-    console.log(myRequest);
+    console.log("Get datos de dashboard");
 
     try {
         /* Ordenes pendientes general */
@@ -40,7 +40,7 @@ module.exports.getDashboardData = async (req, res) => {
         const packed_orders_today = await Order.countDocuments({
             order_picked: true,
             order_packed: true,
-            order_asigned_to: myRequest.user,
+            order_packed_for: myRequest.user,
             order_problem: null,
             payment_status: "paid",
             packed_at: { $gte: today_init, $lte: today}
