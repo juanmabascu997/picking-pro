@@ -541,7 +541,7 @@ module.exports.packOrder = async (req, res) => {
     let storeInfo = await Store.findOne({ user_id: myRequest.store_id }).lean();
     console.log("Empaquetar orden: ", myRequest.id);
     //POSTeo en tiendanube que empaquete la orden
-    const { data } = await axios.post(
+    const {data} = await axios.post(
       `https://api.tiendanube.com/v1/${myRequest.store_id}/orders/${myRequest.id}/pack`,
       {},
       {
@@ -551,7 +551,6 @@ module.exports.packOrder = async (req, res) => {
         },
       }
     );
-
     //Updateo la orden en mi base de datos
     /* Deberia updatear todos los datos pertinentes ,
             No se puede depender de que tiendanube nos updatee a nosotros
@@ -565,7 +564,7 @@ module.exports.packOrder = async (req, res) => {
       }
     );
 
-    res.status(200).json(true);
+    res.status(200).json(data);
   } catch (error) {
     res.status(400).json({
       error: error,
