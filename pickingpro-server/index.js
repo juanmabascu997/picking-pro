@@ -18,7 +18,7 @@ mongoose.connect(uri,
     .catch(e => console.log(e))
 
 app.use(cors({
-    origin: ["https://picking-pro-production.up.railway.app", "http://localhost:3000"],
+    origin: ["https://picking-pro-production.up.railway.app", "http://localhost:3000", "https://pickingpro-front-v2.vercel.app/"],
     // origin: ["http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true,
