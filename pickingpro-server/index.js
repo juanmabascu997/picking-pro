@@ -9,8 +9,8 @@ const app = express();
 // const password = 'OyxrdEG10q5QW5Km';        //Configuro contraseña
 // const uri = `mongodb+srv://${user}:${password}@cluster0.pe8iyp6.mongodb.net/picking-pro?retryWrites=true&w=majority`;             //Configuro uri
 
-const uri = `mongodb://mongo:uRh3w0zN7QWo2nnuxPMC@containers-us-west-155.railway.app:7988`;
-
+const uri = `mongodb://mongo:NS4mytMnw2VRM1Eojdhj@containers-us-west-155.railway.app:7988`;
+ 
 mongoose.connect(uri,
     { useNewUrlParser: true, useUnifiedTopology: true }
 )           //Nos conectamos a la dirección de la base
