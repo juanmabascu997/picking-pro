@@ -337,10 +337,11 @@ module.exports.getProductsToPick = async (req, res) => {
               variant_id: parseInt(ordersDB[i].products[j].variant_id),
               sku: ordersDB[i].products[j].sku,
               barcode: ordersDB[i].products[j].barcode,
-              id: ordersDB[i].id,
+              id: [ordersDB[i].id],
             };
             productsToPick.push(data);
           } else {
+            productsToPick[pos].id.push(ordersDB[i].id)
             productsToPick[pos].quantity += parseInt(
               ordersDB[i].products[j].quantity
             );
@@ -350,7 +351,6 @@ module.exports.getProductsToPick = async (req, res) => {
 
       for (let i = 0; i < ordersDB.length; i++) {
         //Updateo mi database con la data del usuario
-        // const result = await Order.findOneAndUpdate({ id: ordersDB[i].id }, { order_picked: true, order_asigned_to: userId, picked_at: (new Date().toISOString()) });
         let usuarioInfo = await User.find({
           _id: userId,
         }).lean();
@@ -384,7 +384,7 @@ module.exports.setProductsPicked = async (req, res) => {
     for (let i = 0; i < myProducts.length; i++) {
       //Updateo mi database con la data del usuario
       const result = await Order.findOneAndUpdate(
-        { id: myProducts[i].id },
+        { id: myProducts[i] },
         {
           order_picked: true,
           order_asigned_to: null,
