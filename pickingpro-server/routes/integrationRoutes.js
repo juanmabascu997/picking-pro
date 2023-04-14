@@ -15,6 +15,7 @@ const {
   solveProblem,
   getOrdersToShip,
   stopBeingPackaged,
+  deleteStoreWebhoks
 } = require("../controllers/integrationControllers");
 
 router.get("/", (req, res) => res.json({ message: "Inicio de API" }));
@@ -22,6 +23,8 @@ router.get("/", (req, res) => res.json({ message: "Inicio de API" }));
 router.get("/connect", connectTiendanube);
 
 router.get("/connected-stores", getConnectedStores);
+
+router.delete("/delete-store", deleteStoreWebhoks);
 
 router.get("/picking-products", getProductsToPick);
 

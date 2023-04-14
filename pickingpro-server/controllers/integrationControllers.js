@@ -577,7 +577,7 @@ module.exports.getOrdersWithProblem = async (req, res) => {
     const ordersWithProblem = await Order.find({
       order_problem: { $ne: null },
     }).lean();
-    console.log("Traer ordenes con problemas:", ordersWithProblem);
+    console.log("Traer ordenes con problemas");
 
     res.status(200).json(ordersWithProblem);
   } catch (error) {
@@ -645,6 +645,47 @@ module.exports.getOrdersToShip = async (req, res) => {
     // const ordersToShip = ordersToShipOne.concat(ordersToShipTwo);
 
     res.status(200).json(ordersToShipOne);
+  } catch (error) {
+    res.status(400).json({
+      error: error,
+    });
+  }
+};
+
+
+module.exports.deleteStoreWebhoks = async (req, res) => {
+  try {
+    const storeinfoDB = req.query;
+
+    const webhooks = await axios.get(
+      `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/webhooks/`,
+      {
+        headers: {
+          Authentication: "bearer " + storeinfoDB.access_token,
+          "Content-Type": "application/json",
+          "User-Agent": "picking-pro (nahuelezequiel20@gmail.com)",
+        },
+      }
+    )
+    await Store.findOneAndDelete({user_id: storeinfoDB.user_id});
+    
+    if(webhooks.data.length > 0) {
+      webhooks.data.map(async (web)=>{
+        await axios.delete(
+          `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/webhooks/${web.id}`,
+          {
+            headers: {
+              Authentication: "bearer " + storeinfoDB.access_token,
+              "Content-Type": "application/json",
+              "User-Agent": "picking-pro (nahuelezequiel20@gmail.com)",
+            },
+          }
+        );
+      })
+      res.status(200).json(true);
+    } else {
+      res.status(200).json(false);
+    }
   } catch (error) {
     res.status(400).json({
       error: error,
