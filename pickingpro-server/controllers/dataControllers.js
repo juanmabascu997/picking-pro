@@ -40,7 +40,6 @@ module.exports.getDashboardData = async (req, res) => {
         const packed_orders_today = await Order.countDocuments({
             order_picked: true,
             order_packed: true,
-            order_packed_for: myRequest.user,
             order_problem: null,
             payment_status: "paid",
             packed_at: { $gte: today_init, $lte: today}
