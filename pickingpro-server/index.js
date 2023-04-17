@@ -30,6 +30,22 @@ app.use('/auth', require('./routes/authRoutes'));
 app.use('/data', require('./routes/dataRoutes'));
 app.use('/info', require('./routes/infoRoutes'));
 
+var Agenda = require('agenda');
+const { getTransactionsDataWorker } = require("./controllers/worker");
+
+
+var agenda = new Agenda({db: {address: uri}});
+
+agenda.define('sendNewsletter', function() {
+  console.log("Sending newsletter.");
+  getTransactionsDataWorker();
+});
+
+agenda.on('ready', function() {
+  agenda.every('24 hours', 'sendNewsletter');
+  agenda.start(); 
+});
+
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
