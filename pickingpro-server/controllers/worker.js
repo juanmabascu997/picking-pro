@@ -2,6 +2,13 @@ const Store = require("../models/store");
 const Order = require("../models/orden");
 const axios = require("axios");
 
+function getPreviousDay(date = new Date()) {
+    const previous = new Date(date.getTime());
+    previous.setDate(date.getDate() - 1);
+  
+    return previous;
+}
+
 module.exports.getTransactionsDataWorker = async () => {
     try {
         let today = getPreviousDay();
