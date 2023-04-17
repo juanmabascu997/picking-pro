@@ -55,3 +55,44 @@ module.exports.getDashboardData = async (req, res) => {
         res.json({err: "Error has been ocurred"});
     }
 }
+
+module.exports.getTransactionsData = async (req, res) => {
+    try {
+        let today = new Date();
+        const storeinfoDB = await Store.find();
+        let transactions = [];
+        today = today.toISOString().split("T")[0];
+        for (const stores of storeinfoDB) {
+            try {
+                console.log("Get datos de hoy " , today);
+                const { data } = await axios.get(
+                    `https://api.tiendanube.com/v1/${stores.user_id}/orders?created_at_min=${today}`,
+                    {
+                        headers: {
+                          Authentication: "bearer " + stores.access_token,
+                          "User-Agent": "picking-pro (nahuelezequiel20@gmail.com)",
+                        },
+                    }
+                )
+                console.log(data);
+                transactions.push(data);
+                posts.push(userPosts)
+            } catch (error) {
+                if(error.response.data.code === 404) {
+                    console.log("No hay transacciones");
+                }
+                else {
+                    console.log(error.response.data.description);
+                }
+            }
+        }
+        
+
+        res.json({
+            transactions
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({err: "Error has been ocurred"});
+    }
+}
