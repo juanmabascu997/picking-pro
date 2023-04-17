@@ -3,6 +3,13 @@ const Order = require("../models/orden");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 
+function getPreviousDay(date = new Date()) {
+    const previous = new Date(date.getTime());
+    previous.setDate(date.getDate() - 1);
+  
+    return previous;
+}
+
 module.exports.getDashboardData = async (req, res) => {
     /* Recibo el id del usuario que mando la peticion */
 
@@ -58,13 +65,20 @@ module.exports.getDashboardData = async (req, res) => {
 
 module.exports.getTransactionsData = async (req, res) => {
     try {
-        let today = new Date();
+       
+          
+        let today = getPreviousDay();
+        let today_init = new Date();
+        today_init.setHours(00,00,00);
         const storeinfoDB = await Store.find();
         let transactions = [];
+        let transactions_db = [];
         today = today.toISOString().split("T")[0];
+        console.log("Transacciones de hoy ",  today);
+
+        // Traigo la data de cada una de las tiendas desde Tiendanube
         for (const stores of storeinfoDB) {
             try {
-                console.log("Get datos de hoy " , today);
                 const { data } = await axios.get(
                     `https://api.tiendanube.com/v1/${stores.user_id}/orders?created_at_min=${today}`,
                     {
@@ -74,22 +88,47 @@ module.exports.getTransactionsData = async (req, res) => {
                         },
                     }
                 )
-                console.log(data);
-                transactions.push(data);
-                posts.push(userPosts)
+                if(data) {
+                    transactions.push({
+                        store:  stores.nombre,
+                        transactions: data.length,
+                        date: today
+                    })
+                }
             } catch (error) {
                 if(error.response.data.code === 404) {
                     console.log("No hay transacciones");
+                    transactions.push([]);
                 }
                 else {
                     console.log(error.response.data.description);
                 }
             }
         }
-        
+
+       
+        // Traigo la data de cada una de las tiendas desde mi DB
+        for (const stores of storeinfoDB) {
+            try {
+                const orders_today = await Order.countDocuments({
+                    store_id: stores.user_id,
+                    payment_status: "paid",
+                    paid_at: { $gte: today}
+                })
+
+                transactions_db.push({
+                    store:  stores.nombre,
+                    transactions: orders_today,
+                    date: today
+                })
+            } catch (error) {
+                console.log(error);
+            }
+        }
 
         res.json({
-            transactions
+            internalData: transactions_db,
+            externalData: transactions
         });
     } catch (error) {
         console.log(error);
