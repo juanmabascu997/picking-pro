@@ -124,6 +124,25 @@ module.exports.connectTiendanube = async (req, res) => {
     if (!responseWHFour.data)
       res.json({ error: "Could not connect to a webhook" });
 
+    //Ordenes actualizadas 
+    const responseWHFive = await axios.post(
+      `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/webhooks`,
+      {
+        event: "order/updated",
+        url: "https://picking-pro-production.up.railway.app/api/wh-order",
+      },
+      {
+        headers: {
+          Authentication: "bearer " + storeinfoDB.access_token,
+          "Content-Type": "application/json",
+          "User-Agent": "picking-pro (nahuelezequiel20@gmail.com)",
+        },
+      }
+    );
+    console.log(responseWHFive.data);
+    if (!responseWHFive.data)
+      res.json({ error: "Could not connect to a webhook" });
+
     res.json({ message: "Tienda conectada" });
   } catch (err) {
     console.log(err.data);
