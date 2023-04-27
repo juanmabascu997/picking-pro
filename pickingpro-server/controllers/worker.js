@@ -11,15 +11,20 @@ function getPreviousDay(date = new Date()) {
 
 module.exports.getTransactionsDataWorker = async () => {
     try {
-        let today = getPreviousDay();
+        let today_end = new Date();
         let today_init = new Date();
-        today_init.setHours(00,00,00);
+        let date_UTC = new Date();
+        let today_date = date_UTC.toISOString().split("T")[0];
+        
+        date_UTC.setUTCHours(date_UTC.getUTCHours()-3)
+        today_init.setUTCHours(03,00,00);
+        today_end.setUTCHours(23,59,59);
+
         const storeinfoDB = await Store.find();
         let transactions = [];
         let transactions_db = [];
         let transactions_to_add = [];
-        today = today.toISOString().split("T")[0];
-        console.log("Transacciones de hoy ",  today);
+        console.log("Transacciones de hoy: ",  today_date);
 
         // Traigo la data de cada una de las tiendas desde Tiendanube
         for (const stores of storeinfoDB) {
@@ -27,11 +32,11 @@ module.exports.getTransactionsDataWorker = async () => {
                 const orders_today = await Order.find({
                     store_id: stores.user_id,
                     payment_status: "paid",
-                    paid_at: { $gte: today}
+                    paid_at: { $gte: today_init}
                 })
 
                 const { data } = await axios.get(
-                    `https://api.tiendanube.com/v1/${stores.user_id}/orders?created_at_min=${today}`,
+                    `https://api.tiendanube.com/v1/${stores.user_id}/orders?created_at_min=${today_date}`,
                     {
                         headers: {
                           Authentication: "bearer " + stores.access_token,
@@ -39,7 +44,6 @@ module.exports.getTransactionsDataWorker = async () => {
                         },
                     }
                 )
-
                 transactions_db.push({
                     store:  stores.nombre,
                     transactions: orders_today.length,
@@ -48,7 +52,7 @@ module.exports.getTransactionsDataWorker = async () => {
                 if(data) {
                     transactions.push({
                         store:  stores.nombre,
-                        transactions: data.length,
+                        transactions: data.filter(e => e.payment_status === "paid").length,
                     })
                     // Busco las transacciones que no estan en la DB
 
@@ -72,15 +76,15 @@ module.exports.getTransactionsDataWorker = async () => {
                 }
             }
         }
-        
-        return {
+        res.json({
             internalData: transactions_db,
             externalData: transactions,
             transactions_to_add: transactions_to_add,
-            date: today   
-        };
+            date: today_date   
+        });
     } catch (error) {
         console.log(error);
-        return{err: "Error has been ocurred"};
+        res.json({err: "Error has been ocurred"});
     }
 }
+
