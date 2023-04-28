@@ -21,6 +21,7 @@ const orderSchema = new Schema({
     products: Array,
     number: Number,
     owner_note: String,
+    note: String,
     cancelled_at: Date,
     closed_at: Date,
     read_at: Date,

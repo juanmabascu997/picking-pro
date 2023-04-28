@@ -452,7 +452,6 @@ module.exports.getProductsToPack = async (req, res) => {
         order_picked: true,
         order_packed: false,
         shipping_status: "unpacked",
-        // shipping_option: "¡Te vamos a contactar para coordinar la entrega!",
         order_problem: null,
       },
       null
@@ -515,14 +514,29 @@ module.exports.isBeingPackagedBy = async (req, res) => {
     const userId = payload.id;
 
     //Controlo que la orden no este asignada a otro usuario:
+
     const product = await Order.find({ id: myRequest.id });
     if (product[0].order_asigned_to == null) {
       let usuarioInfo = await User.find({
         _id: userId,
       }).lean();
+      
+      //GET info pedido para añadir notas:
+
+      let storeInfo = await Store.findOne({ user_id: myRequest.store_id }).lean();
+
+      let { data } = await axios.get(
+        `https://api.tiendanube.com/v1/${storeInfo.user_id}/orders/${myRequest.id}?fields=note`,
+        {
+          headers: {
+            Authentication: "bearer " + storeInfo.access_token,
+            "User-Agent": "GeneradorJN (nahuelezequiel20@gmail.com)",
+          },
+        }
+      );
       const orderPacked = await Order.findOneAndUpdate(
         { id: myRequest.id },
-        { order_asigned_to: userId, order_asigned_to_name: usuarioInfo[0].name }
+        { order_asigned_to: userId, order_asigned_to_name: usuarioInfo[0].name, note: data.note }
       );
       res.json(true);
     } else if (product[0].order_asigned_to !== userId) {
