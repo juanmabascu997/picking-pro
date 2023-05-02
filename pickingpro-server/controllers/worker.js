@@ -76,15 +76,15 @@ module.exports.getTransactionsDataWorker = async () => {
                 }
             }
         }
-        res.json({
+        return {
             internalData: transactions_db,
             externalData: transactions,
             transactions_to_add: transactions_to_add,
             date: today_date   
-        });
+        }
     } catch (error) {
         console.log(error);
-        res.json({err: "Error has been ocurred"});
+        return {err: "Error has been ocurred"}
     }
 }
 

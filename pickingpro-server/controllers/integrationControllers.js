@@ -534,6 +534,7 @@ module.exports.isBeingPackagedBy = async (req, res) => {
           },
         }
       );
+      console.log(data);
       const orderPacked = await Order.findOneAndUpdate(
         { id: myRequest.id },
         { order_asigned_to: userId, order_asigned_to_name: usuarioInfo[0].name, note: data.note }
