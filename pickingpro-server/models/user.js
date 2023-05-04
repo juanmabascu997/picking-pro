@@ -17,6 +17,14 @@ const userSchema = new Schema({
     type: String,
     required: [true, "Password is Required"],
   },
+  userValid: {
+    type: Boolean,
+    default: false,
+  },
+  admin: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 userSchema.pre("save", async function (next) {
