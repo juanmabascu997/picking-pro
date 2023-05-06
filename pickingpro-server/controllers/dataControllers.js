@@ -28,11 +28,10 @@ module.exports.getDashboardData = async (req, res) => {
             shipping_status: "unpacked"
         });
 
-        /* Ordenes pendientes por el user */
+        /* Ordenes pendientes para empaquetar */
         const pending_orders = await Order.countDocuments({
             order_picked: true,
             order_packed: false,
-            order_asigned_to: myRequest.user,
             order_problem: null,
             payment_status: "paid",
             next_action: "waiting_packing",
