@@ -23,6 +23,17 @@ module.exports.getUserData = async (req, res) => {
     }
 }
 
+module.exports.getUsersData = async (req, res) => {
+    try {
+        let users = await User.find({
+            __v: 0
+        }).lean()
+
+        res.json(users);
+    } catch (error) {
+        res.json({err: "Error has been ocurred"});
+    }
+}
 
 module.exports.getStoreData = async (req, res) => {
     try {
