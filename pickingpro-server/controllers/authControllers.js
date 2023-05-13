@@ -76,22 +76,36 @@ module.exports.login = async (req, res, next) => {
 
 
 module.exports.validateUser = async (req, res, next) => {
-    const { email, password } = req.body;
+    const { email, password, toValidate, validate } = req.body;
     try {
-        const user = await User.login(email, password);
+        const usuarioValidador = await User.login(email, password);
 
-        if(user.admin) {
-            User.findOneAndUpdate({ email: email },{ userValid: true })
-                .then(
-                    () => {
-                        console.log('User validado');
-                    }
-                ).catch(
-                    (error) => {
-                        console.log(error);
-                    }
-                );           
-            res.status(200).json("Usuario validado");
+        if(usuarioValidador.admin) {
+            if(validate) {
+              User.findOneAndUpdate({ email: toValidate },{ userValid: true })
+                  .then(
+                      () => {
+                          console.log('User validado');
+                      }
+                  ).catch(
+                      (error) => {
+                          console.log(error);
+                      }
+                  );           
+              res.status(200).json("Usuario validado");
+            } else {
+              User.findOneAndUpdate({ email: toValidate },{ userValid: false })
+                  .then(
+                      () => {
+                          console.log('User !validado');
+                      }
+                  ).catch(
+                      (error) => {
+                          console.log(error);
+                      }
+                  );           
+              res.status(200).json("Usuario modificado. Se quita validación.");
+            }
         } else {
             res.status(400).json("Usuario no validado. Falta permiso de administrador.");
         }
