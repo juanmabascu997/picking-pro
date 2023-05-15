@@ -250,7 +250,9 @@ module.exports.handleWebhook = async (req, res) => {
 
       Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
         if (err) console.log(err);
-        else
+        else {
+          
+        }
       });
     } 
 
