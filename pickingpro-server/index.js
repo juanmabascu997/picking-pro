@@ -29,6 +29,7 @@ app.use('/api', require('./routes/integrationRoutes'));
 app.use('/auth', require('./routes/authRoutes'));
 app.use('/data', require('./routes/dataRoutes'));
 app.use('/info', require('./routes/infoRoutes'));
+app.use('/test', require('./routes/testRoutes'));
 
 var Agenda = require('agenda');
 const { getTransactionsDataWorker } = require("./controllers/worker");

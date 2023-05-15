@@ -8,6 +8,7 @@ const {
   handleWebhook,
   getProductsToPick,
   setProductsPicked,
+  setNullPicked,
   getProductsToPack,
   reportProblem,
   packOrder,
@@ -49,5 +50,7 @@ router.post("/pack-order", packOrder);
 router.post("/solve-problem", solveProblem);
 
 router.get("/ship-orders", getOrdersToShip);
+
+router.post("/null-picked", setNullPicked)
 
 module.exports = router;

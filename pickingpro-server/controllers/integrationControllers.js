@@ -195,12 +195,11 @@ module.exports.getConnectedStores = async (req, res) => {
 
 module.exports.handleWebhook = async (req, res) => {
   try {
-    console.log(req.body);
     let body = req.body;
 
     //Busco la data de la store que se recibió la actualizacion
     let storeInfo = await Store.findOne({ user_id: body.store_id }).lean();
-    console.log("storeInfo: ", storeInfo);
+
     //Obtengo los datos de la nueva order o su actualizacion
     let { data } = await axios.get(
       `https://api.tiendanube.com/v1/${storeInfo.user_id}/orders/${body.id}?fields=id,store_id,billing_name,shipping_cost_owner,shipping_cost_customer,subtotal,discount,total,shipping_option,created_at,products,number,status,next_action,cancelled_at,note,owner_note,closed_at,read_at,status,payment_status,shipping_address,shipping_status,shipped_at,paid_at`,
@@ -212,39 +211,23 @@ module.exports.handleWebhook = async (req, res) => {
       }
     );
 
-    console.log("Id guardado en Tiendanube para " + body.id + " : " + data.id);
-
-    //Chequeo antes si existe en nuestra base de datos.
-    let orderData = await Order.findOne({ id: data.id }).lean();
-
-    //Si existe, actualizo.
-    if (orderData) {
-      console.log(
-        "Id guardado en la base de datos para " + body.id + " : " + orderData.id
-      );
-      console.log("The document exists on the database!: ", orderData._id);
-      Order.findByIdAndUpdate(orderData._id, data, (err, docs) => {
-        if (err) console.log(err);
-        else
-          console.log(
-            "Updated Order by " +
-              body.event +
-              " " +
-              body.id +
-              " with id: " +
-              docs.id
-          );
-      });
-    }
+    //Chequeo antes si existe en nuestra base de datos.   
+    let orderData = await Order.find(
+        {
+          id: data.id
+        },
+        {
+          _id : 1, id: 1, shipping_status: 1
+        }
+    );
 
     //Si no existe, la creo.
-    if (!orderData) {
+    if (orderData.length === 0) {
       console.log(
-        "The document with id " +
+        "La orden " +
           data.id +
           " : " +
-          body.id +
-          " doesn't exists! Creating new one... "
+          " no existe. Se crea en DB."
       );
       let orderinfoDB = data;
       orderinfoDB.order_picked = false;
@@ -254,8 +237,26 @@ module.exports.handleWebhook = async (req, res) => {
       orderinfoDB.order_problem = null;
       orderinfoDB.order_controlled = false;
       await Order.create(orderinfoDB);
-    }
+    } 
 
+    //Si existe, actualizo.
+    if(orderData.length === 1){
+      console.log(
+        "La orden " +
+          data.id +
+          " : " +
+          " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
+      );
+
+      Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
+        if (err) console.log(err);
+        else
+      });
+    } 
+
+    if(orderData.length > 1) {
+      console.log("The document is duplicate. Id: " + data.id);
+    }
     res.status(200).json(true);
   } catch (error) {
     res.status(400).json({
@@ -403,7 +404,7 @@ module.exports.setProductsPicked = async (req, res) => {
     for (let i = 0; i < myProducts.length; i++) {
       //Updateo mi database con la data del usuario
       const result = await Order.findOneAndUpdate(
-        { id: myProducts[i] },
+        { id: Number(myProducts[i])},
         {
           order_picked: true,
           order_asigned_to: null,
@@ -439,8 +440,6 @@ module.exports.getProductsToPack = async (req, res) => {
     */
 
   try {
-    console.log({ message: "Nueva solicitud de pedido para empaquetar" });
-
     const myRequest = req.query.form;
     const token = req.query.token;
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
@@ -484,7 +483,6 @@ module.exports.getProductsToPack = async (req, res) => {
 module.exports.reportProblem = async (req, res) => {
   try {
     const myProblem = req.body;
-    console.log("Solicitud de reporte: ", myProblem);
     const filter = { id: myProblem.id };
 
     const token = myProblem.token;
@@ -534,11 +532,12 @@ module.exports.isBeingPackagedBy = async (req, res) => {
           },
         }
       );
-      console.log(data);
+
       const orderPacked = await Order.findOneAndUpdate(
         { id: myRequest.id },
         { order_asigned_to: userId, order_asigned_to_name: usuarioInfo[0].name, note: data.note }
       );
+
       res.json(true);
     } else if (product[0].order_asigned_to !== userId) {
       res.json("El producto esta asignado a otro usuario.");
@@ -611,7 +610,6 @@ module.exports.getOrdersWithProblem = async (req, res) => {
     const ordersWithProblem = await Order.find({
       order_problem: { $ne: null },
     }).lean();
-    console.log("Traer ordenes con problemas");
 
     res.status(200).json(ordersWithProblem);
   } catch (error) {
@@ -720,6 +718,34 @@ module.exports.deleteStoreWebhoks = async (req, res) => {
     } else {
       res.status(200).json(false);
     }
+  } catch (error) {
+    res.status(400).json({
+      error: error,
+    });
+  }
+};
+
+
+module.exports.setNullPicked = async (req, res) => {
+  try {
+    const myProducts = req.query.products;
+    let result = null;
+    
+    console.log("Null productos pickeados: ", myProducts);
+    for (let i = 0; i < myProducts.length; i++) {
+      //Updateo mi database con la data del usuario
+      result = await Order.findOneAndUpdate(
+        { id: Number(myProducts[i])},
+        {
+          order_picked: false,
+          order_asigned_to: null,
+          order_asigned_to_name: null,
+          order_picked_for: null,
+        }
+      );
+    }
+    
+    res.status(200).json("Exito!", result);
   } catch (error) {
     res.status(400).json({
       error: error,
