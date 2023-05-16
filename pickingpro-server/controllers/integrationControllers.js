@@ -240,7 +240,7 @@ module.exports.handleWebhook = async (req, res) => {
     } 
 
     //Si existe, actualizo.
-    if(orderData.length === 1){
+    if(orderData.length >= 1){
       console.log(
         "La orden " +
           data.id +
@@ -250,15 +250,14 @@ module.exports.handleWebhook = async (req, res) => {
 
       Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
         if (err) console.log(err);
-        else {
-          
-        }
       });
+
+      if(orderData.length > 1) {
+        Order.deleteOne({_id: orderData[1]._id})
+        console.log("El documento estaba duplicado. Se corrige. Id: " + data.id);
+      }
     } 
 
-    if(orderData.length > 1) {
-      console.log("The document is duplicate. Id: " + data.id);
-    }
     res.status(200).json(true);
   } catch (error) {
     res.status(400).json({

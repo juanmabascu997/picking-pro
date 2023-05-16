@@ -12,10 +12,7 @@ function getPreviousDay(date = new Date()) {
 
 module.exports.getDashboardData = async (req, res) => {
     /* Recibo el id del usuario que mando la peticion */
-
-    const myRequest = req.query;
-    console.log("Get datos de dashboard");
-
+    
     try {
         /* Ordenes pendientes general */
         const orders_to_pick = await Order.countDocuments({
