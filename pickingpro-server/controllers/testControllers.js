@@ -24,11 +24,38 @@ module.exports.getPedidosFromId = async (req, res) => {
 
 module.exports.getDuplicates = async (req, res) => {
     try {
-        let response = await Order.aggregate([  
+        // let response = await Order.aggregate([  
+        //     {$group: {
+        //             _id: {id: "$id"},
+        //             uniqueIds: {$addToSet:{_id: "$_id", shipping_status: "$shipping_status"}},
+        //             count: {$sum: 1}
+        //         }
+        //     },
+        //     {$match: { 
+        //         count: {"$gt": 1}
+        //         }
+        //     }
+        // ])
+
+        // response.forEach(pedido => {
+        //     let flag = 0;
+        //     pedido.uniqueIds.forEach(
+        //         async (pedidoRepetido) => {
+        //             if (pedidoRepetido.shipping_status === "unpacked" && flag === 0) {
+        //                 flag = 1;
+        //                 return await Order.deleteOne({_id: pedidoRepetido._id})
+        //             } else {
+        //                 return pedidoRepetido
+        //             }
+        //         }
+        //     )
+        // })
+
+        let comprobacion = await Order.aggregate([  
             {$group: {
-                _id: {id: "$id"},
-                uniqueIds: {$addToSet: "$_id"},
-                count: {$sum: 1}
+                    _id: {id: "$id"},
+                    uniqueIds: {$addToSet:{_id: "$_id", shipping_status: "$shipping_status"}},
+                    count: {$sum: 1}
                 }
             },
             {$match: { 
@@ -36,14 +63,8 @@ module.exports.getDuplicates = async (req, res) => {
                 }
             }
         ])
-        // .forEach(async function(doc) {
-        //     let unico = await Order.find({
-        //         _id: doc.uniqueIds[0],
-        //         next_action: 
-        //     });
-
-        // })
-        res.json(response);
+        console.log(comprobacion);
+        res.json("Se realizo limpieza de repetidos: " + comprobacion.length);
     }
     catch (err) {
         console.log(err);
