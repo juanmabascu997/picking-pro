@@ -253,8 +253,9 @@ module.exports.handleWebhook = async (req, res) => {
       });
 
       if(orderData.length > 1) {
-        Order.deleteOne({_id: orderData[1]._id})
-        console.log("El documento estaba duplicado. Se corrige. Id: " + data.id);
+        Order.deleteOne({_id: orderData[1]._id}).then(()=>{
+          console.log("El documento estaba duplicado. Se corrige. Id: " + data.id);
+        })
       }
     } 
 
