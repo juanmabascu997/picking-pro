@@ -37,7 +37,7 @@ module.exports.getDuplicates = async (req, res) => {
             }
         ])
         console.log(comprobacion.length);
-        res.json("Se muestran los pedidos repetidos: ", comprobacion);
+        res.json({comprobacion});
     }
     catch (err) {
         console.log(err);
