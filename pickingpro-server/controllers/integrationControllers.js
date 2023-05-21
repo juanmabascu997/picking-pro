@@ -241,21 +241,21 @@ module.exports.handleWebhook = async (req, res) => {
 
     //Si existe, actualizo.
     if(orderData.length >= 1){
-      console.log(
-        "La orden " +
-          data.id +
-          " : " +
-          " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
-      );
-
-      Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
-        if (err) console.log(err);
-      });
-
       if(orderData.length > 1) {
-        Order.deleteOne({_id: orderData[1]._id}).then(()=>{
+        await Order.deleteOne({_id: orderData[1]._id}).then(()=>{
           console.log("El documento estaba duplicado. Se corrige. Id: " + data.id);
         })
+      } else {
+        console.log(
+          "La orden " +
+            data.id +
+            " : " +
+            " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
+        );
+  
+        await Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
+          if (err) console.log(err);
+        });
       }
     } 
 
@@ -540,6 +540,12 @@ module.exports.isBeingPackagedBy = async (req, res) => {
         { order_asigned_to: userId, order_asigned_to_name: usuarioInfo[0].name, note: data.note }
       );
 
+      // if(product.length > 1) {
+      //   Order.deleteOne({_id: product[1]._id}).then(()=>{
+      //     console.log("El documento estaba duplicado. Se corrige. Id: " + product[0].id);
+      //   })
+      // }
+      
       res.json(true);
     } else if (product[0].order_asigned_to !== userId) {
       res.json("El producto esta asignado a otro usuario.");
