@@ -246,19 +246,36 @@ module.exports.handleWebhook = async (req, res) => {
           console.log("El documento estaba duplicado. Se corrige. Id: " + data.id);
         })
       } else {
-        console.log(
-          "La orden " +
-            data.id +
-            " : " +
-            " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
-        );
-  
+        
         await Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
-          if (err) console.log(err);
+          if (err) { 
+            console.log(err);
+          }
+          else {
+            console.log(
+              "La orden " +
+                data.id +
+                " : " +
+                " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
+            );
+          }
         });
-      }
-    } 
 
+        let lastTest = await Order.find(
+          {
+            id: data.id
+          },
+          {
+            _id : 1, id: 1, shipping_status: 1
+          }
+        );
+        if(lastTest.length > 1) {
+          await Order.deleteOne({_id: lastTest[1]._id}).then(()=>{
+            console.log("El documento estaba duplicado. Se corrige. Id: " + data.id);
+          })
+        } 
+      } 
+    }
     res.status(200).json(true);
   } catch (error) {
     res.status(400).json({
