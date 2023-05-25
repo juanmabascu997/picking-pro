@@ -7,6 +7,28 @@ const fs = require("fs");
 const { response } = require("express");
 const User = require("../models/user");
 
+async function duplicados (id, _id) {
+  try {
+    let lastTest = await Order.find(
+      {
+        id: id
+      },
+      {
+        _id : 1, id: 1, shipping_status: 1
+      }
+    );
+    if(lastTest.length > 1) {
+      await Order.deleteOne({_id: _id}).then(()=>{
+        console.log("Se corrige en duplicados Function. Id: " + id);
+      })
+    } 
+    return true
+  } catch(err) {
+    console.log(err);
+    return false
+  }
+}
+
 module.exports.connectTiendanube = async (req, res) => {
   try {
     if (!req.query.code) res.json({ error: "No code" });
@@ -245,35 +267,18 @@ module.exports.handleWebhook = async (req, res) => {
         await Order.deleteOne({_id: orderData[1]._id}).then(()=>{
           console.log("El documento estaba duplicado. Se corrige. Id: " + data.id);
         })
-      } else {
-        
-        await Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
-          if (err) { 
-            console.log(err);
-          }
-        });
-
-        console.log(
-          "La orden " +
-            data.id +
-            " : " +
-            " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
-        );
-        
-        let lastTest = await Order.find(
-          {
-            id: data.id
-          },
-          {
-            _id : 1, id: 1, shipping_status: 1
-          }
-        );
-        if(lastTest.length > 1) {
-          await Order.deleteOne({_id: lastTest[1]._id}).then(()=>{
-            console.log("El documento estaba duplicado. Se corrige. Id: " + data.id);
-          })
-        } 
       } 
+      await Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
+        if (err)
+          console.log(err);
+      });
+
+      console.log(
+        "La orden " +
+          data.id +
+          " : " +
+          " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
+      );
     }
     res.status(200).json(true);
   } catch (error) {
@@ -323,14 +328,14 @@ module.exports.getProductsToPick = async (req, res) => {
       //Si no los tiene, le asigno nuevos
       console.log("No products picked yet by user", userId);
       /*
-                Consulta a la base de datos por:
-                    Cant. pedidos,
-                    Tipo de envío,
-                    Que estén pagas,
-                    Que estén pendientes de empaquetado.
-                    ----
-                    Debo traer solo los productos.
-            */
+        Consulta a la base de datos por:
+        Cant. pedidos,
+        Tipo de envío,
+        Que estén pagas,
+        Que estén pendientes de empaquetado.
+        ----
+        Debo traer solo los productos.
+      */
       ordersDB = await Order.find(
         {
           payment_status: "paid",
@@ -358,6 +363,9 @@ module.exports.getProductsToPick = async (req, res) => {
     else {
       for (var i = 0; i < ordersDB.length; i++) {
         //Creo my array de objetos válidos
+
+        await duplicados(ordersDB[i].id, ordersDB[i]._id)
+
         for (var j = 0; j < ordersDB[i].products.length; j++) {
           //Busco por variante!! Si no se solapan variantes.
           const pos = productsToPick.findIndex(
