@@ -265,7 +265,7 @@ module.exports.handleWebhook = async (req, res) => {
     if(orderData.length >= 1){
       if(orderData.length > 1) {
         await Order.deleteOne({_id: orderData[1]._id}).then(()=>{
-          console.log("El documento estaba duplicado. Se corrige. Id: " + data.id);
+          console.log("El documento estaba duplicado. Se corrige en webhook. Id: " + data.id);
         })
       } 
       await Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
