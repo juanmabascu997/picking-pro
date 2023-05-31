@@ -243,7 +243,8 @@ module.exports.handleWebhook = async (req, res) => {
         }
     );
     console.log(
-      'Evento: ' + body.event
+      'Evento: ' + body.event +
+      'Orden: ' + orderData.length
     );
     //Si no existe, la creo.
     if (orderData.length === 0) {
