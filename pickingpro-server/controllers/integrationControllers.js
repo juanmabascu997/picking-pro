@@ -268,21 +268,20 @@ module.exports.handleWebhook = async (req, res) => {
           console.log("El documento estaba duplicado. Se corrige en webhook. Id: " + data.id);
         })
       } 
-      console.log(
-        'Evento: ' + body.event +
-        'Orden: ' + orderData.length
-      );
-      await Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
-        if (err)
-          console.log(err);
-      });
 
-      console.log(
-        "La orden " +
-          data.id +
-          " : " +
-          " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
-      );
+      await Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
+        if (err){
+          console.log(err);
+        } else {
+          console.log(
+            "La orden " +
+              data.id +
+              " : " +
+              " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
+          );
+        }
+      })
+      
     }
     res.status(200).json(true);
   } catch (error) {
