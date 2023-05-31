@@ -242,10 +242,7 @@ module.exports.handleWebhook = async (req, res) => {
           _id : 1, id: 1, shipping_status: 1
         }
     );
-    console.log(
-      'Evento: ' + body.event +
-      'Orden: ' + orderData.length
-    );
+
     //Si no existe, la creo.
     if (orderData.length === 0) {
       console.log(
@@ -271,6 +268,10 @@ module.exports.handleWebhook = async (req, res) => {
           console.log("El documento estaba duplicado. Se corrige en webhook. Id: " + data.id);
         })
       } 
+      console.log(
+        'Evento: ' + body.event +
+        'Orden: ' + orderData.length
+      );
       await Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
         if (err)
           console.log(err);
