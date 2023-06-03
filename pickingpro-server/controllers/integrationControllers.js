@@ -427,7 +427,9 @@ module.exports.getProductsToPick = async (req, res) => {
 module.exports.setProductsPicked = async (req, res) => {
   try {
     const myProducts = req.query.products;
-    const userId = req.query.token;
+    const token = req.query.token;
+    const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
+    const userId = payload.id;
 
     console.log("Post productos pickeados: ",myProducts);
     for (let i = 0; i < myProducts.length; i++) {
@@ -603,7 +605,9 @@ module.exports.packOrder = async (req, res) => {
   try {
     /* Formato de myRequest: {id, store_id} */
     const myRequest = req.body;
-    const userId = req.body.token;
+    const token = req.query.token;
+    const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
+    const userId = payload.id;
 
     //Busco el token de la store que se recibió la actualizacion
     let storeInfo = await Store.findOne({ user_id: myRequest.store_id }).lean();

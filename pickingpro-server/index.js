@@ -16,6 +16,8 @@ mongoose.connect(uri,
 )           //Nos conectamos a la dirección de la base
     .then(() => console.log("Base de datos conectada"))
     .catch(e => console.log(e))
+    
+mongoose.set('strictQuery', false);
 
 app.use(cors({
     origin: ["https://picking-pro-production.up.railway.app", "http://localhost:3000", "https://pickingpro-front-v2.vercel.app"],
