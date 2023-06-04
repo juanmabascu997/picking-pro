@@ -3,6 +3,7 @@ const Order = require("../models/orden");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const { getInfoByID } = require("../middlewares/infoMiddleware");
 
 module.exports.getUserData = async (req, res) => {
     try {
@@ -63,3 +64,24 @@ module.exports.getProductData = async (req, res) => {
     }
 }
 
+
+module.exports.getUserDataDashboard = async (req, res) => {
+    try {
+        const myUser = req.query.myUser;
+        const findUserId = req.query.findUserId;
+
+        const payload = jwt.verify(myUser, "my-secret-key"); //Obtengo ID del usuario conectado
+
+        let usuarioInfo = await User.findById(payload.id).lean();
+
+        if(!usuarioInfo.admin){ 
+            res.json({err: "Se necesitan permisos de administrador!"})
+        } else {
+            let response = await getInfoByID(findUserId)
+    
+            res.json(response);
+        }
+    } catch (error) {
+        res.json({err: "Error has been ocurred" + error});
+    }
+}
