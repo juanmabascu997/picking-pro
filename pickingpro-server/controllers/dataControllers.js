@@ -13,11 +13,11 @@ function getPreviousDay(date = new Date()) {
 
 module.exports.getDashboardData = async (req, res) => {
     /* Recibo el id del usuario que mando la peticion */
-    const token = req.query.token;
-    const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
-    const userId = payload.id;
-
     try {
+        const token = req.query.token;
+        const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
+        const userId = payload.id;
+
         let response = await getInfoByID(userId)
         res.json(response)
     } catch (error) {
