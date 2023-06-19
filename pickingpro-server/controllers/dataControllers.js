@@ -4,13 +4,6 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const { getInfoByID } = require("../middlewares/infoMiddleware");
 
-function getPreviousDay(date = new Date()) {
-    const previous = new Date(date.getTime());
-    previous.setDate(date.getDate() - 1);
-  
-    return previous;
-}
-
 module.exports.getDashboardData = async (req, res) => {
     /* Recibo el id del usuario que mando la peticion */
     try {

@@ -10,12 +10,13 @@ function getOneWeekAfter() {
     return lastday;
 }
 
-module.exports.getInfoByID = async function (userId) {
+module.exports.getInfoByID = async function (userId, primeraFecha = null, segundaFecha = null) {
     try {
         let oneWeekAfter = getOneWeekAfter();
         let today_init = new Date();
         let today = new Date();
-        today_init.setHours(00,00,00);
+        let nuevaFecha = null;
+        today_init.setHours(0o0,0o0,0o0);
 
         /* Ordenes pendientes general */
         const orders_to_pick = await Order.countDocuments({
@@ -87,14 +88,42 @@ module.exports.getInfoByID = async function (userId) {
             ]
         })
 
-        return {
-            picked_orders_in_the_week,
-            packed_orders_in_the_week,
-            orders_to_pick,
-            pending_orders,
-            packed_orders_today,
-            picked_orders_today
+        if(primeraFecha || segundaFecha) {
+            if(!segundaFecha) {
+                nuevaFecha = new Date(primeraFecha)
+                nuevaFecha.setHours(0o0,0o0,0o0);
+            }            
+            /* Ordenes pickeadas por el user en las fechas seleccionadas*/
+            const picked_orders_in_selected_dates = await Order.countDocuments({
+                order_picked: true,
+                order_picked_for: userId,
+                order_problem: null,
+                payment_status: "paid",
+                $and: [
+                    {picked_at: {$gte: segundaFecha ? segundaFecha : nuevaFecha}},
+                    {picked_at: {$lte: primeraFecha}}
+                ]
+            })
+            return {
+                picked_orders_in_the_week,
+                packed_orders_in_the_week,
+                orders_to_pick,
+                pending_orders,
+                packed_orders_today,
+                picked_orders_today,
+                picked_orders_in_selected_dates
+            }
+        } else {
+            return {
+                picked_orders_in_the_week,
+                packed_orders_in_the_week,
+                orders_to_pick,
+                pending_orders,
+                packed_orders_today,
+                picked_orders_today
+            }
         }
+
     } catch (error) {
         return{err: "Error has been ocurred"}
     }

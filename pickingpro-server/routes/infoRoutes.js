@@ -1,12 +1,12 @@
 const express = require('express');
-const { getUserData, getProductData, getStoreData, getUsersData, getUserDataDashboard } = require('../controllers/infoControllers');
+const { getUserData, getStoreData, getUsersData, getUserDataDashboard, getPedidosFromId } = require('../controllers/infoControllers');
 const router = express.Router();
 
 router.get('/user-data', getUserData);
 router.get('/users-data', getUsersData);
 router.get('/store-data', getStoreData);
 
-router.get('/product-data', getProductData);
+router.get('/product-data', getPedidosFromId);
 router.get('/user-data-dashboard', getUserDataDashboard);
 
 

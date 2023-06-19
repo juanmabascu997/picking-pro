@@ -49,18 +49,27 @@ module.exports.getStoreData = async (req, res) => {
     }
 }
 
-module.exports.getProductData = async (req, res) => {
-    const myRequest = req.query;
+module.exports.getPedidosFromId = async (req, res) => {
     try {
+        const myUser = req.query.myUser;
+        const pedidoId = req.query.pedidoId;
+        
+        const payload = jwt.verify(myUser, "my-secret-key"); //Obtengo ID del usuario conectado
 
-        res.json({
-            orders_to_pick,
-            pending_orders,
-            packed_orders_today
-        });
+        let usuarioInfo = await User.findById(payload.id).lean();
 
-    } catch (error) {
-        res.json({err: "Error has been ocurred"});
+        if(!usuarioInfo.admin){ 
+            res.json({err: "Se necesitan permisos de administrador!"})
+        } else {
+            let response = await Order.find({
+                    id: pedidoId
+                }
+            );
+            res.json(response);
+        }
+    }
+    catch (err) {
+        console.log(err);
     }
 }
 
@@ -69,6 +78,8 @@ module.exports.getUserDataDashboard = async (req, res) => {
     try {
         const myUser = req.query.myUser;
         const findUserId = req.query.findUserId;
+        const primeraFecha = req.query.primeraFecha;
+        const segundaFecha = req.query.segundaFecha;
 
         const payload = jwt.verify(myUser, "my-secret-key"); //Obtengo ID del usuario conectado
 
@@ -77,7 +88,7 @@ module.exports.getUserDataDashboard = async (req, res) => {
         if(!usuarioInfo.admin){ 
             res.json({err: "Se necesitan permisos de administrador!"})
         } else {
-            let response = await getInfoByID(findUserId)
+            let response = await getInfoByID(findUserId, primeraFecha, segundaFecha)
     
             res.json(response);
         }
