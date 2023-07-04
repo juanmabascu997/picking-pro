@@ -21,10 +21,11 @@ async function duplicados (id, _id) {
       await Order.deleteOne({_id: _id}).then(()=>{
         console.log("Se corrige en duplicados Function. Id: " + id);
       })
-    } 
-    return true
+      return true
+    }
+    return false
   } catch(err) {
-    console.log(err);
+    console.log("Error en duplicidad ", err);
     return false
   }
 }
@@ -314,8 +315,7 @@ module.exports.getProductsToPick = async (req, res) => {
         order_problem: null,
         order_asigned_to: userId,
         order_asigned_to_name: usuarioInfo.name,
-        // order_picked_for: userId,
-        // order_packed_for: userId
+        shipping_option: {$nin: ['Retiras en RETIRO LOCAL RAMOS MEJIA']}
       },
       {
         products: 1,
@@ -326,7 +326,6 @@ module.exports.getProductsToPick = async (req, res) => {
         limit: myRequest.pedidos,
       }
     ).lean();
-
     if (!ordersDB.length) {
       //Si no los tiene, le asigno nuevos
       console.log("No products picked yet by user", userId);
@@ -348,6 +347,7 @@ module.exports.getProductsToPick = async (req, res) => {
           order_problem: null,
           order_picked_for: null,
           order_asigned_to: null,
+          shipping_option: {$nin: ['Retiras en RETIRO LOCAL RAMOS MEJIA']}
         },
         {
           products: 1,
@@ -367,33 +367,38 @@ module.exports.getProductsToPick = async (req, res) => {
       for (var i = 0; i < ordersDB.length; i++) {
         //Creo my array de objetos válidos
 
-        await duplicados(ordersDB[i].id, ordersDB[i]._id)
-
-        for (var j = 0; j < ordersDB[i].products.length; j++) {
-          //Busco por variante!! Si no se solapan variantes.
-          const pos = productsToPick.findIndex(
-            (product) =>
-              product.product_id ==
-                parseInt(ordersDB[i].products[j].product_id) &&
-              product.variant_id == parseInt(ordersDB[i].products[j].variant_id)
-          );
-          if (pos == -1) {
-            const data = {
-              product_id: ordersDB[i].products[j].product_id,
-              name: ordersDB[i].products[j].name,
-              image_link: ordersDB[i].products[j].image.src,
-              quantity: parseInt(ordersDB[i].products[j].quantity),
-              variant_id: parseInt(ordersDB[i].products[j].variant_id),
-              sku: ordersDB[i].products[j].sku,
-              barcode: ordersDB[i].products[j].barcode,
-              id: [ordersDB[i].id],
-            };
-            productsToPick.push(data);
-          } else {
-            productsToPick[pos].id.push(ordersDB[i].id)
-            productsToPick[pos].quantity += parseInt(
-              ordersDB[i].products[j].quantity
+        let res = await duplicados(ordersDB[i].id, ordersDB[i]._id)
+        if(res) {
+          //Filtro mi elemento duplicado de mi arreglo
+          ordersDB = ordersDB.filter(e => e.id !== ordersDB[i].id)
+        
+        } else {
+          for (var j = 0; j < ordersDB[i].products.length; j++) {
+            //Busco por variante!! Si no se solapan variantes.
+            const pos = productsToPick.findIndex(
+              (product) =>
+                product.product_id ==
+                  parseInt(ordersDB[i].products[j].product_id) &&
+                product.variant_id == parseInt(ordersDB[i].products[j].variant_id)
             );
+            if (pos == -1) {
+              const data = {
+                product_id: ordersDB[i].products[j].product_id,
+                name: ordersDB[i].products[j].name,
+                image_link: ordersDB[i].products[j].image.src,
+                quantity: parseInt(ordersDB[i].products[j].quantity),
+                variant_id: parseInt(ordersDB[i].products[j].variant_id),
+                sku: ordersDB[i].products[j].sku,
+                barcode: ordersDB[i].products[j].barcode,
+                id: [ordersDB[i].id],
+              };
+              productsToPick.push(data);
+            } else {
+              productsToPick[pos].id.push(ordersDB[i].id)
+              productsToPick[pos].quantity += parseInt(
+                ordersDB[i].products[j].quantity
+              );
+            }
           }
         }
       }
