@@ -301,6 +301,7 @@ module.exports.getProductsToPick = async (req, res) => {
     var productsToPick = [];
     let ordersDB = {};
 
+    console.log(pedidos);
     let usuarioInfo = await User.find({
       _id: userId,
     }).lean();
