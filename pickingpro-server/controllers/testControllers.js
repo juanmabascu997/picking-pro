@@ -4,13 +4,15 @@ module.exports.getPedidosFromId = async (req, res) => {
     try {
         const myId = req.body.id;
 
-        console.log(myId);
-
         let response = await Order.find({
             id: myId
         },
         {
-            _id : 1, id: 1, shipping_status: 1
+            _id : 1, id: 1, shipping_status: 1,
+            order_packed_for: 1,
+            order_picked_for: 1,
+            order_packed: 1,
+            order_picked: 1,
         }
         );
 

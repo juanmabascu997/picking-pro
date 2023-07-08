@@ -294,7 +294,7 @@ module.exports.handleWebhook = async (req, res) => {
 
 module.exports.getProductsToPick = async (req, res) => {
   try {
-    const myRequest = req.query.form;
+    const pedidos = req.query.pedidos;
     const token = req.query.token;
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
@@ -323,12 +323,15 @@ module.exports.getProductsToPick = async (req, res) => {
         number: 1,
       },
       {
-        limit: myRequest.pedidos,
+        limit: pedidos,
       }
     ).lean();
+
+
     if (!ordersDB.length) {
       //Si no los tiene, le asigno nuevos
       console.log("No products picked yet by user", userId);
+      
       /*
         Consulta a la base de datos por:
         Cant. pedidos,
@@ -355,7 +358,7 @@ module.exports.getProductsToPick = async (req, res) => {
           number: 1,
         },
         {
-          limit: myRequest.pedidos,
+          limit: pedidos,
         }
       ).lean();
     }
