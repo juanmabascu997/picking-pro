@@ -274,12 +274,12 @@ module.exports.handleWebhook = async (req, res) => {
         if (err){
           console.log(err);
         } else {
-          console.log(
-            "La orden " +
-              data.id +
-              " : " +
-              " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
-          );
+          // console.log(
+          //   "La orden " +
+          //     data.id +
+          //     " : " +
+          //     " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
+          // );
         }
       })
       
