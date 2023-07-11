@@ -492,6 +492,7 @@ module.exports.getProductsToPack = async (req, res) => {
         order_packed: false,
         shipping_status: "unpacked",
         order_problem: null,
+        shipping_option: {$nin: ['Retiras en RETIRO LOCAL RAMOS MEJIA']}
       },
       null
     ).lean();
@@ -614,7 +615,7 @@ module.exports.packOrder = async (req, res) => {
   try {
     /* Formato de myRequest: {id, store_id} */
     const myRequest = req.body;
-    const token = req.query.token;
+    const token = myRequest.token;
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
 
