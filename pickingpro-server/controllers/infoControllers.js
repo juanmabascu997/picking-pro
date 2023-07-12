@@ -96,3 +96,30 @@ module.exports.getUserDataDashboard = async (req, res) => {
         res.json({err: "Error has been ocurred" + error});
     }
 }
+function removeDuplicates(arr) {
+    return arr.filter((item,
+        index) => arr.indexOf(item) === index);
+}
+
+module.exports.getShippingMethods = async (req, res) => {
+    try {  
+        let methods = [];
+        
+        let response = await Order.find(
+            {
+                shipping_option: {$nin: ['Retiras en RETIRO LOCAL RAMOS MEJIA']}
+            },
+            {
+                shipping_option: 1,
+            }).lean();
+
+        response.map((i)=>( methods.push(i.shipping_option)));
+
+        methods = removeDuplicates(methods);
+
+
+        res.json(methods);
+    } catch (error) {
+        res.json({err: "Error has been ocurred" + error});
+    }
+}
