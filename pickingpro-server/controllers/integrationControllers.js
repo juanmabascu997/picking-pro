@@ -7,26 +7,28 @@ const fs = require("fs");
 const { response } = require("express");
 const User = require("../models/user");
 
-async function duplicados (id, _id) {
+async function duplicados(id, _id) {
   try {
     let lastTest = await Order.find(
       {
-        id: id
+        id: id,
       },
       {
-        _id : 1, id: 1, shipping_status: 1
+        _id: 1,
+        id: 1,
+        shipping_status: 1,
       }
     );
-    if(lastTest.length > 1) {
-      await Order.deleteOne({_id: _id}).then(()=>{
+    if (lastTest.length > 1) {
+      await Order.deleteOne({ _id: _id }).then(() => {
         console.log("Se corrige en duplicados Function. Id: " + id);
-      })
-      return true
+      });
+      return true;
     }
-    return false
-  } catch(err) {
+    return false;
+  } catch (err) {
     console.log("Error en duplicidad ", err);
-    return false
+    return false;
   }
 }
 
@@ -147,7 +149,7 @@ module.exports.connectTiendanube = async (req, res) => {
     if (!responseWHFour.data)
       res.json({ error: "Could not connect to a webhook" });
 
-    //Ordenes actualizadas 
+    //Ordenes actualizadas
     const responseWHFive = await axios.post(
       `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/webhooks`,
       {
@@ -234,24 +236,21 @@ module.exports.handleWebhook = async (req, res) => {
       }
     );
 
-    //Chequeo antes si existe en nuestra base de datos.   
+    //Chequeo antes si existe en nuestra base de datos.
     let orderData = await Order.find(
-        {
-          id: data.id
-        },
-        {
-          _id : 1, id: 1, shipping_status: 1
-        }
+      {
+        id: data.id,
+      },
+      {
+        _id: 1,
+        id: 1,
+        shipping_status: 1,
+      }
     );
 
     //Si no existe, la creo.
     if (orderData.length === 0) {
-      console.log(
-        "La orden " +
-          data.id +
-          " : " +
-          " no existe. Se crea en DB."
-      );
+      console.log("La orden " + data.id + " : " + " no existe. Se crea en DB.");
       let orderinfoDB = data;
       orderinfoDB.order_picked = false;
       orderinfoDB.order_packed = false;
@@ -260,18 +259,21 @@ module.exports.handleWebhook = async (req, res) => {
       orderinfoDB.order_problem = null;
       orderinfoDB.order_controlled = false;
       await Order.create(orderinfoDB);
-    } 
+    }
 
     //Si existe, actualizo.
-    if(orderData.length >= 1){
-      if(orderData.length > 1) {
-        await Order.deleteOne({_id: orderData[1]._id}).then(()=>{
-          console.log("El documento estaba duplicado. Se corrige en webhook. Id: " + data.id);
-        })
-      } 
+    if (orderData.length >= 1) {
+      if (orderData.length > 1) {
+        await Order.deleteOne({ _id: orderData[1]._id }).then(() => {
+          console.log(
+            "El documento estaba duplicado. Se corrige en webhook. Id: " +
+              data.id
+          );
+        });
+      }
 
       await Order.findByIdAndUpdate(orderData[0]._id, data, (err, docs) => {
-        if (err){
+        if (err) {
           console.log(err);
         } else {
           // console.log(
@@ -281,8 +283,7 @@ module.exports.handleWebhook = async (req, res) => {
           //     " SI existe. Se actualiza en DB. ID: " + orderData[0]._id + ' por metodo: ' + body.event
           // );
         }
-      })
-      
+      });
     }
     res.status(200).json(true);
   } catch (error) {
@@ -295,13 +296,16 @@ module.exports.handleWebhook = async (req, res) => {
 module.exports.getProductsToPick = async (req, res) => {
   try {
     const pedidos = req.query.pedidos;
+    const tiendas = req.query.filtrosTiendas;
+    const tiposDeEnvios = req.query.filtrosEnvios;
+
     const token = req.query.token;
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
     var productsToPick = [];
     let ordersDB = {};
+    var tiendas_ids = null;
 
-    console.log(pedidos);
     let usuarioInfo = await User.find({
       _id: userId,
     }).lean();
@@ -316,34 +320,30 @@ module.exports.getProductsToPick = async (req, res) => {
         order_problem: null,
         order_asigned_to: userId,
         order_asigned_to_name: usuarioInfo.name,
-        shipping_option: {$nin: ['Retiras en RETIRO LOCAL RAMOS MEJIA']}
+        shipping_option: { $nin: ["Retiras en RETIRO LOCAL RAMOS MEJIA"] },
       },
       {
         products: 1,
         id: 1,
         number: 1,
-      },
-      {
-        limit: pedidos,
       }
     ).lean();
-
 
     if (!ordersDB.length) {
       //Si no los tiene, le asigno nuevos
       console.log("No products picked yet by user", userId);
-      
-      /*
-        Consulta a la base de datos por:
-        Cant. pedidos,
-        Tipo de envío,
-        Que estén pagas,
-        Que estén pendientes de empaquetado.
-        ----
-        Debo traer solo los productos.
-      */
+
+      if (tiendas) {
+        if (tiendas.length > 0) {
+          tiendas_ids = tiendas.map((tienda) => {
+            return parseInt(tienda.user_id, 10);
+          });
+        }
+      }
+
       ordersDB = await Order.find(
         {
+          store_id: tiendas_ids ? { $in: [...tiendas_ids] } : { $ne: null },
           payment_status: "paid",
           order_picked: false,
           order_packed: false,
@@ -351,7 +351,12 @@ module.exports.getProductsToPick = async (req, res) => {
           order_problem: null,
           order_picked_for: null,
           order_asigned_to: null,
-          shipping_option: {$nin: ['Retiras en RETIRO LOCAL RAMOS MEJIA']}
+          shipping_option: tiposDeEnvios
+            ? {
+                $in: [...tiposDeEnvios],
+                $nin: ["Retiras en RETIRO LOCAL RAMOS MEJIA"],
+              }
+            : { $nin: ["Retiras en RETIRO LOCAL RAMOS MEJIA"] },
         },
         {
           products: 1,
@@ -371,11 +376,10 @@ module.exports.getProductsToPick = async (req, res) => {
       for (var i = 0; i < ordersDB.length; i++) {
         //Creo my array de objetos válidos
 
-        let res = await duplicados(ordersDB[i].id, ordersDB[i]._id)
-        if(res) {
+        let res = await duplicados(ordersDB[i].id, ordersDB[i]._id);
+        if (res) {
           //Filtro mi elemento duplicado de mi arreglo
-          ordersDB = ordersDB.filter(e => e.id !== ordersDB[i].id)
-        
+          ordersDB = ordersDB.filter((e) => e.id !== ordersDB[i].id);
         } else {
           for (var j = 0; j < ordersDB[i].products.length; j++) {
             //Busco por variante!! Si no se solapan variantes.
@@ -383,7 +387,8 @@ module.exports.getProductsToPick = async (req, res) => {
               (product) =>
                 product.product_id ==
                   parseInt(ordersDB[i].products[j].product_id) &&
-                product.variant_id == parseInt(ordersDB[i].products[j].variant_id)
+                product.variant_id ==
+                  parseInt(ordersDB[i].products[j].variant_id)
             );
             if (pos == -1) {
               const data = {
@@ -398,7 +403,7 @@ module.exports.getProductsToPick = async (req, res) => {
               };
               productsToPick.push(data);
             } else {
-              productsToPick[pos].id.push(ordersDB[i].id)
+              productsToPick[pos].id.push(ordersDB[i].id);
               productsToPick[pos].quantity += parseInt(
                 ordersDB[i].products[j].quantity
               );
@@ -427,6 +432,7 @@ module.exports.getProductsToPick = async (req, res) => {
       res.status(200).json(productsToPick);
     }
   } catch (error) {
+    console.log(error);
     res.status(400).json({
       error: error,
     });
@@ -440,11 +446,11 @@ module.exports.setProductsPicked = async (req, res) => {
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
 
-    console.log("Post productos pickeados: ",myProducts);
+    console.log("Post productos pickeados: ", myProducts);
     for (let i = 0; i < myProducts.length; i++) {
       //Updateo mi database con la data del usuario
       const result = await Order.findOneAndUpdate(
-        { id: Number(myProducts[i])},
+        { id: Number(myProducts[i]) },
         {
           order_picked: true,
           order_asigned_to: null,
@@ -492,7 +498,7 @@ module.exports.getProductsToPack = async (req, res) => {
         order_packed: false,
         shipping_status: "unpacked",
         order_problem: null,
-        shipping_option: {$nin: ['Retiras en RETIRO LOCAL RAMOS MEJIA']}
+        shipping_option: { $nin: ["Retiras en RETIRO LOCAL RAMOS MEJIA"] },
       },
       null
     ).lean();
@@ -502,14 +508,14 @@ module.exports.getProductsToPack = async (req, res) => {
       res.status(200).json("No product to pack");
       return;
     }
-    
+
     for (let i = 0; i < productToPack.length; i++) {
       const storeDB = await Store.find({
         user_id: productToPack[i].store_id,
       }).lean(); //Con lean convierto de documento a json!!
 
       const name = storeDB[0].nombre;
-      
+
       productToPack[i].store_name = name;
     }
     //FIJAR ACA
@@ -559,10 +565,12 @@ module.exports.isBeingPackagedBy = async (req, res) => {
       let usuarioInfo = await User.find({
         _id: userId,
       }).lean();
-      
+
       //GET info pedido para añadir notas:
 
-      let storeInfo = await Store.findOne({ user_id: myRequest.store_id }).lean();
+      let storeInfo = await Store.findOne({
+        user_id: myRequest.store_id,
+      }).lean();
 
       let { data } = await axios.get(
         `https://api.tiendanube.com/v1/${storeInfo.user_id}/orders/${myRequest.id}?fields=note`,
@@ -576,7 +584,11 @@ module.exports.isBeingPackagedBy = async (req, res) => {
 
       const orderPacked = await Order.findOneAndUpdate(
         { id: myRequest.id },
-        { order_asigned_to: userId, order_asigned_to_name: usuarioInfo[0].name, note: data.note }
+        {
+          order_asigned_to: userId,
+          order_asigned_to_name: usuarioInfo[0].name,
+          note: data.note,
+        }
       );
 
       // if(product.length > 1) {
@@ -584,7 +596,7 @@ module.exports.isBeingPackagedBy = async (req, res) => {
       //     console.log("El documento estaba duplicado. Se corrige. Id: " + product[0].id);
       //   })
       // }
-      
+
       res.json(true);
     } else if (product[0].order_asigned_to !== userId) {
       res.json("El producto esta asignado a otro usuario.");
@@ -623,7 +635,7 @@ module.exports.packOrder = async (req, res) => {
     let storeInfo = await Store.findOne({ user_id: myRequest.store_id }).lean();
     console.log("Empaquetar orden: ", myRequest.id);
     //POSTeo en tiendanube que empaquete la orden
-    const {data} = await axios.post(
+    const { data } = await axios.post(
       `https://api.tiendanube.com/v1/${myRequest.store_id}/orders/${myRequest.id}/pack`,
       {},
       {
@@ -733,7 +745,6 @@ module.exports.getOrdersToShip = async (req, res) => {
   }
 };
 
-
 module.exports.deleteStoreWebhoks = async (req, res) => {
   try {
     const storeinfoDB = req.query;
@@ -747,11 +758,11 @@ module.exports.deleteStoreWebhoks = async (req, res) => {
           "User-Agent": "picking-pro (nahuelezequiel20@gmail.com)",
         },
       }
-    )
-    await Store.findOneAndDelete({user_id: storeinfoDB.user_id});
-    
-    if(webhooks.data.length > 0) {
-      webhooks.data.map(async (web)=>{
+    );
+    await Store.findOneAndDelete({ user_id: storeinfoDB.user_id });
+
+    if (webhooks.data.length > 0) {
+      webhooks.data.map(async (web) => {
         await axios.delete(
           `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/webhooks/${web.id}`,
           {
@@ -762,7 +773,7 @@ module.exports.deleteStoreWebhoks = async (req, res) => {
             },
           }
         );
-      })
+      });
       res.status(200).json(true);
     } else {
       res.status(200).json(false);
@@ -774,17 +785,16 @@ module.exports.deleteStoreWebhoks = async (req, res) => {
   }
 };
 
-
 module.exports.setNullPicked = async (req, res) => {
   try {
     const myProducts = req.query.products;
     let result = null;
-    
+
     console.log("Null productos pickeados: ", myProducts);
     for (let i = 0; i < myProducts.length; i++) {
       //Updateo mi database con la data del usuario
       result = await Order.findOneAndUpdate(
-        { id: Number(myProducts[i])},
+        { id: Number(myProducts[i]) },
         {
           order_picked: false,
           order_asigned_to: null,
@@ -793,7 +803,7 @@ module.exports.setNullPicked = async (req, res) => {
         }
       );
     }
-    
+
     res.status(200).json("Exito!", result);
   } catch (error) {
     res.status(400).json({
