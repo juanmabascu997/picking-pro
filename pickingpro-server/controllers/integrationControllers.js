@@ -4,7 +4,6 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const { writeFile } = require("fs/promises");
 const fs = require("fs");
-const { response } = require("express");
 const User = require("../models/user");
 
 async function duplicados(id, _id) {
@@ -58,7 +57,6 @@ module.exports.connectTiendanube = async (req, res) => {
         },
       }
     );
-    console.log("storeinfo: ", storeinfo);
     /*-------GUARDO EN MI BASE DE DATOS---------*/
     const storeinfoDB = {
       nombre: storeinfo.data.name.es,
@@ -106,8 +104,6 @@ module.exports.connectTiendanube = async (req, res) => {
       }
     );
 
-    console.log(responseWHTwo.data);
-
     if (!responseWHTwo.data)
       res.json({ error: "Could not connect to a webhook" });
 
@@ -126,7 +122,6 @@ module.exports.connectTiendanube = async (req, res) => {
         },
       }
     );
-    console.log(responseWHThree.data);
     if (!responseWHThree.data)
       res.json({ error: "Could not connect to a webhook" });
 
@@ -145,7 +140,6 @@ module.exports.connectTiendanube = async (req, res) => {
         },
       }
     );
-    console.log(responseWHFour.data);
     if (!responseWHFour.data)
       res.json({ error: "Could not connect to a webhook" });
 
@@ -164,7 +158,6 @@ module.exports.connectTiendanube = async (req, res) => {
         },
       }
     );
-    console.log(responseWHFive.data);
     if (!responseWHFive.data)
       res.json({ error: "Could not connect to a webhook" });
 
@@ -332,7 +325,6 @@ module.exports.getProductsToPick = async (req, res) => {
     if (!ordersDB.length) {
       //Si no los tiene, le asigno nuevos
       console.log("No products picked yet by user", userId);
-
       if (tiendas) {
         if (tiendas.length > 0) {
           tiendas_ids = tiendas.map((tienda) => {
