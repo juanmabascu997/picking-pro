@@ -1,8 +1,11 @@
 const express = require('express');
-const { cancelProductsForPick } = require('../controllers/pickingControllers');
+const { cancelProductsForPick, getProductsToPickByMatch } = require('../controllers/pickingControllers');
 const router = express.Router();
 
 
 router.post('/cancel-products-for-pick', cancelProductsForPick);
+
+router.get('/products-for-pick-by-match', getProductsToPickByMatch);
+
 
 module.exports = router;
