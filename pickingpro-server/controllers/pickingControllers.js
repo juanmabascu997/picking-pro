@@ -217,7 +217,7 @@ module.exports.setProductsPicked = async (req, res) => {
 
 module.exports.cancelProductsForPick = async (req, res) => {
   try {
-    const token = req.body.token;
+    const token = req.query.token;
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
 
