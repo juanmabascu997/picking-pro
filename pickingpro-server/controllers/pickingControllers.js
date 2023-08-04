@@ -221,9 +221,7 @@ module.exports.cancelProductsForPick = async (req, res) => {
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
 
-    console.log("Cancel product for pick");
-
-    console.log(userId);
+    console.log("Cancel product for pick ", userId);
 
     let ordersDB = await Order.find(
       {
