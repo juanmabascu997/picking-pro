@@ -1,5 +1,3 @@
-/* ESTO SE REPITE SIEMPRE QUE QUIERO CREAR UN NUEVO MODELO DE DOCUMENTO */
-
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -55,11 +53,14 @@ const orderSchema = new Schema({
         default: null,
     },
     order_controlled: Boolean,
+    estanteria: {
+        type: String,
+        default: null,
+    },
     packed_at: Date,
     picked_at: Date
 });
 
-//Crear modelo
-const Order = mongoose.model('Order', orderSchema, 'ordenes'); //LE TENGO QUE ESPECIFICAR EL NOMBRE DE LA COLECCION!!!
+const Order = mongoose.model('Order', orderSchema, 'ordenes');
 
 module.exports = Order;

@@ -32,6 +32,8 @@ app.use('/auth', require('./routes/authRoutes'));
 app.use('/data', require('./routes/dataRoutes'));
 app.use('/info', require('./routes/infoRoutes'));
 app.use('/picking', require('./routes/pickingRoutes'));
+app.use('/estanteria', require('./routes/estanteriaRoutes'));
+
 app.use('/test', require('./routes/testRoutes'));
 
 var Agenda = require('agenda');

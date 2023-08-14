@@ -435,6 +435,7 @@ module.exports.setProductsPicked = async (req, res) => {
   try {
     const myProducts = req.query.products;
     const token = req.query.token;
+    const estanteria = req.query.estanteria ?? null;
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
 
@@ -448,6 +449,7 @@ module.exports.setProductsPicked = async (req, res) => {
           order_asigned_to: null,
           order_asigned_to_name: null,
           order_picked_for: userId,
+          estanteria: estanteria,
           picked_at: new Date().toISOString(),
         }
       );
