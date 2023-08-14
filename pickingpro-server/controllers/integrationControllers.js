@@ -435,7 +435,8 @@ module.exports.setProductsPicked = async (req, res) => {
   try {
     const myProducts = req.query.products;
     const token = req.query.token;
-    const estanteria = req.query.estanteria ?? null;
+    // const estanteria = req.query.estanteria;
+    const estanteria = null;
     const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
     const userId = payload.id;
 
