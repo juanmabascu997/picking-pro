@@ -100,7 +100,7 @@ module.exports.getInfoByID = async function (
         { data: [], label: "Picked", id: "uvId" },
       ];
 
-      for (let i = 0; i < 6; i++) {
+      for (let i = 1; i < 6; i++) {
         let today_chart = new Date(curr.setDate(first + i));
         let today_init_chart = new Date(curr.setDate(first + i));
         today_init_chart.setHours(0o0, 0o0, 0o0);
