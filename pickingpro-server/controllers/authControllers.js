@@ -68,6 +68,7 @@ module.exports.login = async (req, res, next) => {
         admin: user.admin,
       });
   } catch (err) {
+    console.log(err, email, password)
     const errors = handleErrors(err);
     res.json({ errors, status: false });
   }
