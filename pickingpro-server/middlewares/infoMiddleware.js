@@ -10,6 +10,12 @@ function getOneWeekAfter() {
   return lastday;
 }
 
+const days = (date_1, date_2) => {
+  let difference = date_1.getTime() - date_2.getTime();
+  let TotalDays = Math.ceil(difference / (1000 * 3600 * 24));
+  return TotalDays;
+};
+
 module.exports.getInfoByID = async function (
   userId,
   primeraFecha = null,
@@ -93,17 +99,48 @@ module.exports.getInfoByID = async function (
     });
 
     if (primeraFecha || segundaFecha) {
-      var curr = new Date(); // get current date
-      var first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
+      var curr = null;
+      var first = null;
+      let date_1 = new Date(primeraFecha);
+      let date_2 = null;
+      let total_dias = 6;
+      let inicio_dias = 1;
+
+      if (segundaFecha) {
+        date_2 = new Date(segundaFecha);
+        curr = date_1; // get current date
+        first = date_2.getDate(); // First day is the day of the month - the day of the week;
+        total_dias = days(date_1, date_2);
+        inicio_dias = 0;
+      } else {
+        curr = new Date(); // get current date
+        first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
+      }
+
       let data_week = [
-        { data: [], label: "Packed", id: "pvId" },
-        { data: [], label: "Picked", id: "uvId" },
+        {
+          data: [],
+          id: "Empaquetados",
+          id: "pvId",
+          dias: segundaFecha
+            ? []
+            : ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"],
+        },
+        {
+          data: [],
+          id: "Pickeados",
+          id: "uvId",
+          dias: segundaFecha
+            ? []
+            : ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes"],
+        },
       ];
 
-      for (let i = 1; i < 6; i++) {
+      for (let i = inicio_dias; i <= total_dias; i++) {
         let today_chart = new Date(curr.setDate(first + i));
         let today_init_chart = new Date(curr.setDate(first + i));
         today_init_chart.setHours(0o0, 0o0, 0o0);
+        today_chart.setHours(20, 59, 59);
 
         const picked = await Order.countDocuments({
           order_picked: true,
@@ -111,8 +148,8 @@ module.exports.getInfoByID = async function (
           order_problem: null,
           payment_status: "paid",
           $and: [
-            { packed_at: { $gte: today_init_chart } },
-            { packed_at: { $lte: today_chart } },
+            { picked_at: { $gte: today_init_chart } },
+            { picked_at: { $lte: today_chart } },
           ],
         });
         const packed = await Order.countDocuments({
@@ -121,13 +158,19 @@ module.exports.getInfoByID = async function (
           order_problem: null,
           payment_status: "paid",
           $and: [
-            { picked_at: { $gte: today_init_chart } },
-            { picked_at: { $lte: today_chart } },
+            { packed_at: { $gte: today_init_chart } },
+            { packed_at: { $lte: today_chart } },
           ],
         });
 
-        data_week[0].data.push(packed);
-        data_week[1].data.push(picked);
+        data_week[0].data.push({
+          x: today_chart.getDate(),
+          y: packed,
+        });
+        data_week[1].data.push({
+          x: today_chart.getDate(),
+          y: picked,
+        });
       }
 
       if (!segundaFecha) {
