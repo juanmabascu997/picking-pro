@@ -22,7 +22,7 @@ mongoose.set('strictQuery', false);
 app.use(cors({
     origin: ["https://picking-pro-production.up.railway.app", "http://localhost:3000", "https://pickingpro-front-v2.vercel.app"],
     // origin: ["http://localhost:3000"],
-    methods: ["GET", "POST", "DELETE"],
+    methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
 }));
 

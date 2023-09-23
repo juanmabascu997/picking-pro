@@ -1,5 +1,3 @@
-/* ESTO SE REPITE SIEMPRE QUE QUIERO CREAR UN NUEVO MODELO DE DOCUMENTO */
-
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 const bcrypt = require("bcrypt");
@@ -45,7 +43,6 @@ userSchema.statics.login = async function (email, password) {
   throw Error("incorrect email");
 };
 
-//Crear modelo
-const User = mongoose.model("User", userSchema, "users"); //LE TENGO QUE ESPECIFICAR EL NOMBRE DE LA COLECCION!!!
+const User = mongoose.model("User", userSchema, "users");
 
 module.exports = User;

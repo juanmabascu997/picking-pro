@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 
 const maxAge = 3 * 24 * 60 * 60;
 
@@ -155,3 +156,36 @@ module.exports.adminUser = async (req, res, next) => {
     res.json({ errors, status: false });
   }
 };
+
+
+module.exports.resetPassword = async (req, res, next) => {
+  const { email, password, newMail, newPassword  } = req.body;
+  try {
+      const usuarioValidador = await User.login(email, password);
+
+      if(usuarioValidador.admin) {
+        const salt = await bcrypt.genSalt();
+        let newPasswordCrypt = await bcrypt.hash(newPassword, salt);
+
+        User.findOneAndUpdate({ email: newMail },{ password: newPasswordCrypt })
+            .then(
+                () => {
+                    res.status(200).json("Usuario modificado");
+                }
+            ).catch(
+                (error) => {
+                    console.log(error);
+                    res.status(200).json("Usuario no modificado");
+                }
+            );           
+        
+      } else {
+        res.status(400).json("Usuario no modificado. Falta permiso de administrador.");
+      }
+  }
+  catch (err) {
+    const errors = handleErrors(err);
+    res.json({ errors, status: false });
+  }
+}
+
