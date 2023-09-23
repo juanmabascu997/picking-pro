@@ -8,10 +8,11 @@ module.exports.getDashboardData = async (req, res) => {
     /* Recibo el id del usuario que mando la peticion */
     try {
         const token = req.query.token;
+        const primeraFecha = req.query.primeraFecha;
         const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
         const userId = payload.id;
-
-        let response = await getInfoByID(userId)
+        
+        let response = await getInfoByID(userId, primeraFecha)
         res.json(response)
     } catch (error) {
         res.json({err: "Error has been ocurred in getDashboardData"});
