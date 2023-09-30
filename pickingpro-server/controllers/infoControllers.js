@@ -27,7 +27,7 @@ module.exports.getUserData = async (req, res) => {
 module.exports.getUsersData = async (req, res) => {
     try {
         let users = await User.find({
-            __v: 0
+            active: 1,
         }).lean()
 
         res.json(users);

@@ -23,6 +23,18 @@ const userSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  active: {
+    type: Boolean,
+    default: true,
+  },
+  pickingGols: {
+    type: Number,
+    default: 0,
+  },
+  packingGols: {
+    type: Number,
+    default: 0,
+  }
 });
 
 userSchema.pre("save", async function (next) {
