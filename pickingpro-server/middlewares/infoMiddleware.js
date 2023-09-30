@@ -74,6 +74,9 @@ module.exports.getInfoByID = async function (
       ],
     });
 
+    let curr = new Date(); 
+    let first = curr.getDate() - curr.getDay();
+    
     /* Ordenes empaquetadas por el user en la semana actual*/
     const packed_orders_in_the_week = await Order.countDocuments({
       order_packed: true,
@@ -81,7 +84,7 @@ module.exports.getInfoByID = async function (
       order_problem: null,
       payment_status: "paid",
       $and: [
-        { packed_at: { $gte: oneWeekAfter } },
+        { packed_at: { $gte: first } },
         { packed_at: { $lte: today } },
       ],
     });
@@ -93,7 +96,7 @@ module.exports.getInfoByID = async function (
       order_problem: null,
       payment_status: "paid",
       $and: [
-        { picked_at: { $gte: oneWeekAfter } },
+        { picked_at: { $gte: first } },
         { picked_at: { $lte: today } },
       ],
     });
