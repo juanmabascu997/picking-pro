@@ -67,6 +67,8 @@ module.exports.login = async (req, res, next) => {
         email: user.email,
         valid: user.userValid,
         admin: user.admin,
+        pickingGoals: user.pickingGoals,
+        packingGoals: user.packingGoals,
       });
   } catch (err) {
     console.log(err, email, password)
