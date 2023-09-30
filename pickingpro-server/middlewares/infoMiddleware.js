@@ -76,7 +76,8 @@ module.exports.getInfoByID = async function (
 
     let current = new Date(); 
     let firstDayfTheWeek = current.getDate() - current.getDay();
-    
+    firstDayfTheWeek = new Date(current.setDate(firstDayfTheWeek + 1));
+
     /* Ordenes empaquetadas por el user en la semana actual*/
     const packed_orders_in_the_week = await Order.countDocuments({
       order_packed: true,
