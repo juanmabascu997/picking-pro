@@ -27,11 +27,11 @@ const userSchema = new Schema({
     type: Boolean,
     default: true,
   },
-  pickingGols: {
+  pickingGoals: {
     type: Number,
     default: 0,
   },
-  packingGols: {
+  packingGoals: {
     type: Number,
     default: 0,
   }
