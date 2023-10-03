@@ -168,8 +168,8 @@ module.exports.connectTiendanube = async (req, res) => {
 };
 
 module.exports.getLabelToPrint = async (req, res) => {
+  const myRequest = req.query;
   try {
-    const myRequest = req.query;
 
     //Obtengo la etiqueta de bluemail
     const { data } = await axios.post(
@@ -196,7 +196,7 @@ module.exports.getLabelToPrint = async (req, res) => {
       res.send(data);
     });
   } catch (err) {
-    console.log(err);
+    console.log("error al obtener etiqueta bluemail", myRequest.id);
     res.json({ message: err.data });
   }
 };
