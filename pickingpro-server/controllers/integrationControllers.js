@@ -564,9 +564,9 @@ module.exports.isBeingPackagedBy = async (req, res) => {
       //GET info pedido para añadir notas:
 
       let storeInfo = await Store.findOne({
-        user_id: myRequest.store_id,
+        user_id: product[0].store_id,
       }).lean();
-
+      
       let { data } = await axios.get(
         `https://api.tiendanube.com/v1/${storeInfo.user_id}/orders/${myRequest.id}?fields=note`,
         {
@@ -586,18 +586,12 @@ module.exports.isBeingPackagedBy = async (req, res) => {
         }
       );
 
-      // if(product.length > 1) {
-      //   Order.deleteOne({_id: product[1]._id}).then(()=>{
-      //     console.log("El documento estaba duplicado. Se corrige. Id: " + product[0].id);
-      //   })
-      // }
-
       res.json(true);
     } else if (product[0].order_asigned_to !== userId) {
       res.json("El producto esta asignado a otro usuario.");
     }
   } catch (error) {
-    console.error(error);
+    console.error("Error en cargar notas de:", req.body.myRequest);
   }
 };
 
