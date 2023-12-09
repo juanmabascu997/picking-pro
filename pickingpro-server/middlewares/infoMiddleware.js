@@ -1,20 +1,18 @@
 const Order = require("../models/orden");
 
-function getOneWeekAfter() {
-  var curr = new Date(); // get current date
-  var first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
-  var last = first - 6; // last day is the first day + 6
-
-  var lastday = new Date(curr.setDate(last)).toISOString();
-
-  return lastday;
-}
-
 const days = (date_1, date_2) => {
   let difference = date_1.getTime() - date_2.getTime();
   let TotalDays = Math.ceil(difference / (1000 * 3600 * 24));
   return TotalDays;
 };
+
+let fechaHoraActual = function () {
+  var fecha = new Date();
+  var diferenciaHoraria = fecha.getTimezoneOffset();
+  fecha.setMinutes(fecha.getMinutes() - diferenciaHoraria);
+
+  return fecha
+}
 
 module.exports.getInfoByID = async function (
   userId,
@@ -22,9 +20,9 @@ module.exports.getInfoByID = async function (
   segundaFecha = null
 ) {
   try {
-    let oneWeekAfter = getOneWeekAfter();
     let today_init = new Date();
-    let today = new Date();
+    let today = fechaHoraActual();
+
     let nuevaFecha = null;
     today_init.setHours(0o0, 0o0, 0o0);
 
@@ -117,7 +115,7 @@ module.exports.getInfoByID = async function (
         total_dias = days(date_1, date_2);
         inicio_dias = 0;
       } else {
-        curr = new Date(); // get current date
+        curr = fechaHoraActual(); // get current date
         first = curr.getDate() - curr.getDay(); // First day is the day of the month - the day of the week
       }
 
@@ -181,6 +179,7 @@ module.exports.getInfoByID = async function (
         nuevaFecha = new Date(primeraFecha);
         nuevaFecha.setHours(0o0, 0o0, 0o0);
       }
+      
       /* Ordenes pickeadas por el user en las fechas seleccionadas*/
       const picked_orders_in_selected_dates = await Order.countDocuments({
         order_picked: true,
