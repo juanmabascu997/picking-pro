@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 
 const app = express();
 
-const uri = `mongodb://mongo:NS4mytMnw2VRM1Eojdhj@containers-us-west-155.railway.app:7988`;
+const uri = `mongodb://mongo:b-eaEch4-62-3eh3Bf5-3G2Dd52Abgac@monorail.proxy.rlwy.net:23081`;
  
 mongoose.connect(uri,
     { useNewUrlParser: true, useUnifiedTopology: true }
