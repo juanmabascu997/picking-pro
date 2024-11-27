@@ -3,6 +3,10 @@ const Order = require("../models/orden");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const { getInfoByID } = require("../middlewares/infoMiddleware");
+const xlsx = require('xlsx');
+const fs = require('fs');
+const path = require('path');
+
 
 module.exports.getDashboardData = async (req, res) => {
     /* Recibo el id del usuario que mando la peticion */
@@ -99,3 +103,87 @@ module.exports.getTransactionsData = async (req, res) => {
 }
 
 
+
+module.exports.getTransactionsDataByDate = async (req, res) => {
+    try {
+        let transactions = [];
+        const created_at_min = req.created_at_min;
+        const created_at_max = req.created_at_max;
+        // const storeName = req.storeName;
+        
+        let page = 1;
+        let hasMore = true;
+        let storeName = 'JetBag';
+
+        const storeinfoDB = await Store.findOne({
+            nombre: storeName
+        });
+        
+        if(storeinfoDB.nombre == 'JetBag') {
+            while (hasMore) {
+                try {   
+                    const { data } = await axios.get(
+                        `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/orders`,
+                        {
+                            params: {
+                                page,
+                                per_page: 30,
+                                created_at_min: created_at_min ?? null,
+                                created_at_max: created_at_max ?? null,
+                            },
+                            headers: {
+                                Authentication: "bearer " + storeinfoDB.access_token,
+                                "User-Agent": "picking-pro (nahuelezequiel20@gmail.com)",
+                            },
+                        }
+                    );
+    
+                    if(data) {
+                        transactions.push(...data);
+                    }
+                    
+                    console.log(`Page ${page}: ${data.length} orders retrieved.`);
+                    hasMore = data.length === 30;
+                    page++;
+                } catch (error) {
+                    console.error(`Error fetching orders for store ${storeinfoDB.nombre} on page ${page}:`, error.message);
+                    hasMore = false;
+                }
+            }
+
+            const filePath = generateExcelFile(transactions, storeinfoDB.nombre);
+            
+            res.json({
+                store: storeinfoDB.nombre,
+                transactions: transactions,
+                filePath: filePath
+            });
+        } else {
+            res.json({});
+        }
+    } catch (error) {
+        console.log(error);
+        res.json({err: "Error has been ocurred"});
+    }
+}
+
+function generateExcelFile(transactions, storeName) {    
+    const rows = transactions.map((order) => ({
+        OrderID: order.id,
+        CreatedAt: order.created_at,
+        CustomerName: order.customer?.name || 'N/A',
+        Total: order.total || 0,
+        Currency: order.currency || 'N/A',
+        Status: order.status || 'N/A',
+    }));
+
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.json_to_sheet(rows);
+
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Orders');
+
+    const filePath = path.join(__dirname, `${storeName}_orders.xlsx`);
+    xlsx.writeFile(workbook, filePath);
+
+    return filePath;
+}
