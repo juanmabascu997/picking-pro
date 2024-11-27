@@ -141,7 +141,7 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
                     if(data) {
                         transactions.push(...data);
                     }
-                    
+
                     console.log(`Page ${page}: ${data.length} orders retrieved.`);
                     hasMore = data.length === 30;
                     page++;
@@ -152,12 +152,16 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
             }
 
             const filePath = generateExcelFile(transactions, storeinfoDB.nombre);
-            
-            res.json({
-                store: storeinfoDB.nombre,
-                transactions: transactions,
-                filePath: filePath
+
+            res.download(filePath, (err) => {
+                if (err) {
+                    console.error('Error al descargar el archivo:', err);
+                    res.status(500).send('Error al descargar el archivo');
+                } else {
+                    fs.unlinkSync(filePath);
+                }
             });
+
         } else {
             res.json({});
         }
