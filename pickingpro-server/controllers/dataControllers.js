@@ -107,19 +107,18 @@ module.exports.getTransactionsData = async (req, res) => {
 module.exports.getTransactionsDataByDate = async (req, res) => {
     try {
         let transactions = [];
-        const created_at_min = req.created_at_min;
-        const created_at_max = req.created_at_max;
-        // const storeName = req.storeName;
-        
+        const created_at_min = req.query.created_at_min;
+        const created_at_max = req.query.created_at_max;
+        const storeName = req.query.storeName;
+
         let page = 1;
         let hasMore = true;
-        let storeName = 'JetBag';
 
         const storeinfoDB = await Store.findOne({
             nombre: storeName
         });
         
-        if(storeinfoDB.nombre == 'JetBag') {
+        if(storeinfoDB.nombre == storeName) {
             while (hasMore) {
                 try {   
                     const { data } = await axios.get(
