@@ -152,6 +152,8 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
 
             const filePath = generateExcelFile(transactions, storeinfoDB.nombre);
 
+            res.setHeader('Content-Disposition', `attachment; filename=${storeName}_orders.xlsx`);
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
             res.download(filePath, (err) => {
                 if (err) {
                     console.error('Error al descargar el archivo:', err);
