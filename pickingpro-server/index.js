@@ -15,7 +15,7 @@ mongoose.connect(uri,
 mongoose.set('strictQuery', false);
 
 app.use(cors({
-    origin: ["https://picking-pro-production.up.railway.app", "http://localhost:3000", "https://pickingpro-front-v2.vercel.app"],
+    origin: ["https://picking-pro-production.up.railway.app", "http://localhost:3000", "https://pickingpro-front-v2.vercel.app", "https://tienda-manager-bay.vercel.app"],
     // origin: ["http://localhost:3000"],
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
