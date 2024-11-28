@@ -115,9 +115,9 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
             return res.status(404).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
         }
 
-        created_at_min.setHours(21, 0o0, 0o0);
-        created_at_max.setHours(44, 59, 59);
-        
+        created_at_min.setHours(0, 0, 0);
+        created_at_max.setHours(23, 59, 59);
+
         console.log(created_at_min, created_at_max);
         
         const storeName = req.query.storeName;
