@@ -117,7 +117,9 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
 
         created_at_min.setHours(21, 0o0, 0o0);
         created_at_max.setHours(44, 59, 59);
-
+        
+        console.log(created_at_min, created_at_max);
+        
         const storeName = req.query.storeName;
 
         let page = 1;
