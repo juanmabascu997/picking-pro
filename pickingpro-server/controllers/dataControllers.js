@@ -107,8 +107,17 @@ module.exports.getTransactionsData = async (req, res) => {
 module.exports.getTransactionsDataByDate = async (req, res) => {
     try {
         let transactions = [];
-        const created_at_min = req.query.created_at_min;
-        const created_at_max = req.query.created_at_max;
+
+        const created_at_min = new Date(req.query.created_at_min);
+        const created_at_max = new Date(req.query.created_at_max);
+
+        if(created_at_min > created_at_max) {
+            return res.status(404).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
+        }
+
+        created_at_min.setHours(21, 0o0, 0o0);
+        created_at_max.setHours(44, 59, 59);
+
         const storeName = req.query.storeName;
 
         let page = 1;
@@ -120,7 +129,7 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
         
         if(storeinfoDB.nombre == storeName) {
             while (hasMore) {
-                try {   
+                try {
                     const { data } = await axios.get(
                         `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/orders`,
                         {
@@ -150,6 +159,10 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
                 }
             }
 
+            if(transactions.length === 0) {
+                return res.status(404).send('Revise sus parametros. No se encontraron datos de busqueda.');
+            }
+            
             const filePath = generateExcelFile(transactions, storeinfoDB.nombre);
 
             res.setHeader('Content-Disposition', `attachment; filename=${storeName}_orders.xlsx`);
@@ -157,17 +170,16 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
             res.download(filePath, (err) => {
                 if (err) {
                     console.error('Error al descargar el archivo:', err);
-                    res.status(500).send('Error al descargar el archivo');
+                    return res.status(500).send('Error al descargar el archivo');
                 } else {
                     fs.unlinkSync(filePath);
                 }
             });
 
         } else {
-            res.json({});
+            return res.status(404).send('Revise sus parametros. No se encontró tienda seleccionada.');
         }
     } catch (error) {
-        console.log(error);
         res.json({err: "Error has been ocurred"});
     }
 }
