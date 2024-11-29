@@ -117,8 +117,6 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
 
         created_at_min.setHours(0, 0, 0);
         created_at_max.setHours(23, 59, 59);
-
-        console.log(created_at_min, created_at_max);
         
         const storeName = req.query.storeName;
 
@@ -133,7 +131,7 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
             while (hasMore) {
                 try {
                     const { data } = await axios.get(
-                        `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/orders`,
+                        `https://api.tiendanube.com/v1/${storeinfoDB.user_id}/orders?fields=id,store_id,contact_email,contact_name,contact_identification,billing_name,billing_phone,billing_zipcode,billing_city,billing_province,shipping_cost_owner,shipping_cost_customer,coupon,promotional_discount,subtotal,discount,discount_gateway,total,gateway,gateway_id,gateway_name,shipping_option,shipping_option_code,shipping_option_reference,shipping_pickup_type,created_at,payment_details,payment_count,payment_status,products,number,cancelled_at,closed_at,read_at,status,gateway_link,shipping_carrier_name,shipping_status,paid_at`,
                         {
                             params: {
                                 page,
@@ -164,7 +162,7 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
             if(transactions.length === 0) {
                 return res.status(404).send('Revise sus parametros. No se encontraron datos de busqueda.');
             }
-            
+           
             const filePath = generateExcelFile(transactions, storeinfoDB.nombre);
 
             res.setHeader('Content-Disposition', `attachment; filename=${storeName}_orders.xlsx`);
@@ -186,15 +184,51 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
     }
 }
 
-function generateExcelFile(transactions, storeName) {    
-    const rows = transactions.map((order) => ({
-        OrderID: order.id,
-        CreatedAt: order.created_at,
-        CustomerName: order.customer?.name || 'N/A',
-        Total: order.total || 0,
-        Currency: order.currency || 'N/A',
-        Status: order.status || 'N/A',
+function generateExcelFile(transactions, storeName) {        
+    const rows = transactions.map((order) =>({
+        order_id: order.id,
+        created_at: order.created_at,
+        customer_name: order.customer?.name || 'N/A',
+        total: order.total || 0,
+        currency: order.currency || 'N/A',
+        status: order.status || 'N/A',
+        store_id: order.store_id || 'N/A',
+        contact_email: order.contact_email || 'N/A',
+        contact_name: order.contact_name || 'N/A',
+        contact_identification: order.contact_identification || 'N/A',
+        billing_name: order.billing_name || 'N/A',
+        billing_phone: order.billing_phone || 'N/A',
+        billing_zipcode: order.billing_zipcode || 'N/A',
+        billing_city: order.billing_city || 'N/A',
+        billing_province: order.billing_province || 'N/A',
+        shipping_cost_owner: order.shipping_cost_owner || 0,
+        shipping_cost_customer: order.shipping_cost_customer || 0,
+        coupon: JSON.stringify(order.coupon) || [],
+        promotional_discount: JSON.stringify(order.promotional_discount) || {},
+        subtotal: order.subtotal || 0,
+        discount: order.discount || 0,
+        discount_gateway: order.discount_gateway || 0,
+        gateway: order.gateway || 'N/A',
+        gateway_id: order.gateway_id || 'N/A',
+        gateway_name: order.gateway_name || 'N/A',
+        shipping_option: order.shipping_option || 'N/A',
+        shipping_option_code: order.shipping_option_code || 'N/A',
+        shipping_option_reference: order.shipping_option_reference || 'N/A',
+        shipping_pickup_type: order.shipping_pickup_type || 'N/A',
+        payment_details: JSON.stringify(order.payment_details) || {},
+        payment_count: order.payment_count || 0,
+        payment_status: order.payment_status || 'N/A',
+        products: JSON.stringify(order.products) || [],
+        number: order.number || 'N/A',
+        cancelled_at: order.cancelled_at || null,
+        closed_at: order.closed_at || null,
+        read_at: order.read_at || null,
+        gateway_link: order.gateway_link || 'N/A',
+        shipping_carrier_name: order.shipping_carrier_name || 'N/A',
+        shipping_status: order.shipping_status || 'N/A',
+        paid_at: order.paid_at || null,
     }));
+    
 
     const workbook = xlsx.utils.book_new();
     const worksheet = xlsx.utils.json_to_sheet(rows);
