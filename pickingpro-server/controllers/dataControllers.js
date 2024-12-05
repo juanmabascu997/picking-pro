@@ -187,17 +187,56 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
     }
 }
 
+async function formmaterDate(date) {
+    const fechaArgentina = new Date(date);
+
+    const zonaHoraria = "America/Buenos_Aires";
+    const offset = fechaArgentina.getTimezoneOffset() * 60 * 1000;
+    const fechaArgentinaLocal = new Date(fechaArgentina.getTime() + offset);
+
+    const opciones = {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+        timeZone: zonaHoraria,
+    };
+    const fechaFormateada = new Intl.DateTimeFormat("es-AR", opciones).format(fechaArgentinaLocal);
+
+    return fechaFormateada 
+}
+
 async function generateExcelFile(transactions) {      
     let transacciones = [];
 
     for (let index = 0; index < transactions.length; index++) {
-        const order = transactions[index]
+        const order = transactions[index];
+        let created_at = transactions[index].created_at;
+        let closed_at = transactions[index].closed_at;
+        let cancelled_at = transactions[index].cancelled_at;
+        let paid_at = transactions[index].paid_at;
+        let read_at = transactions[index].read_at;
+
+        created_at = await formmaterDate(created_at);
+        if(closed_at) closed_at = await formmaterDate(closed_at);
+        if(cancelled_at) cancelled_at = await formmaterDate(cancelled_at);
+        if(paid_at) paid_at = await formmaterDate(paid_at);
+        if(read_at) read_at = await formmaterDate(read_at);
+
         let store = await Store.findOne(
             { user_id: order.store_id },
             { nombre: 1, _id: 0 }
         )
         transacciones.push({
             ...order,
+            created_at: created_at,
+            closed_at: closed_at,
+            cancelled_at: cancelled_at,
+            paid_at: paid_at,
+            read_at: read_at,
             store_name: store.nombre
         })
     }
@@ -206,9 +245,7 @@ async function generateExcelFile(transactions) {
         order_id: order.id,
         created_at: order.created_at,
         customer_name: order.customer?.name || 'N/A',
-        total: order.total 
-        ? `$${(order.total * 1).toLocaleString('es-ES')}`
-        : '$0', 
+        total: order.total || 0,
         currency: order.currency || 'N/A',
         status: order.status || 'N/A',
         store_id: order.store_id || 'N/A',
@@ -226,12 +263,8 @@ async function generateExcelFile(transactions) {
         shipping_cost_customer: order.shipping_cost_customer || 0,
         coupon: JSON.stringify(order.coupon) || [],
         promotional_discount: JSON.stringify(order.promotional_discount) || {},
-        subtotal: order.subtotal 
-        ? `$${(order.subtotal * 1).toLocaleString('es-ES')}`
-        : '$0',
-        discount: order.discount 
-        ? `$${(order.discount * 1).toLocaleString('es-ES')}`
-        : '$0',
+        subtotal: order.subtotal || 0,
+        discount: order.discount || 0,
         discount_gateway: order.discount_gateway || 0,
         gateway: order.gateway || 'N/A',
         gateway_name: order.gateway_name || 'N/A',
@@ -259,36 +292,49 @@ async function generateExcelFile(transactions) {
         (order) => order.payment_status === 'paid'
     );
 
-    const totalSales = effectiveSales.reduce((sum, order) => sum + (Number(order.subtotal) || 0), 0);
+    const totalSales = effectiveSales.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
     const salesByDate = effectiveSales.reduce((acc, order) => {
         const date = order.created_at.split('T')[0];
-        acc[date] = (acc[date] || 0) + 1;
+        acc[date] = acc[date] || { date: date, count: 0, recaudacion: 0 };
+        acc[date].count += 1;
+        acc[date].recaudacion += Number(order.total) || 0;
         return acc;
     }, {});
 
     const paymentPlatforms = effectiveSales.reduce((acc, order) => {
         const platform = order.gateway || 'Unknown';
-        acc[platform] = (acc[platform] || 0) + 1;
+        acc[platform] = acc[platform] || { platformMethod: platform, count: 0, recaudacion: 0 };
+        acc[platform].count += 1;
+        acc[platform].recaudacion += Number(order.total) || 0;
         return acc;
     }, {});
     
     const paymentMethods = effectiveSales.reduce((acc, order) => {
         const payment_method = order.payment_details?.method;
-        acc[payment_method] = (acc[payment_method] || 0) + 1;
+        acc[payment_method] = acc[payment_method] || { paymentMethod: payment_method, count: 0, recaudacion: 0 };
+        acc[payment_method].count += 1;
+        acc[payment_method].recaudacion += Number(order.total) || 0;
         return acc;
     }, {});
     
     const cardMethods = effectiveSales.reduce((acc, order) => {
         if(order.payment_details.method == 'credit_card'){
             const card_installments = order.payment_details.installments;
-            acc[card_installments] = (acc[card_installments] || 0) + 1;
+            acc[card_installments] = acc[card_installments] || { cardMethod: card_installments, count: 0, recaudacion: 0 };
+            acc[card_installments].count += 1;
+            acc[card_installments].recaudacion += Number(order.total) || 0;
             return acc;
         } else {
             return acc
         }
     }, {});
 
+    const totalVentasTarjeta = Object.values(cardMethods).reduce((acc, method) => {
+        return acc + method.count;
+    }, 0);
+
+    
     const shippingMethods = effectiveSales.reduce((acc, order) => {
         const method = order.shipping_option || 'Unknown';
         acc[method] = acc[method] || { count: 0, cost: 0 };
@@ -317,10 +363,11 @@ async function generateExcelFile(transactions) {
     const ordersSheet = xlsx.utils.json_to_sheet(rows);
     xlsx.utils.book_append_sheet(workbook, ordersSheet, 'Ordenes');
 
-    const salesByDateRows = Object.entries(salesByDate).map(([date, count]) => ({
+    const salesByDateRows = Object.entries(salesByDate).map(([date, { count, recaudacion }]) => ({
         Fecha: date,
         Cantidad: count,
         'Porcentaje de ventas': ((count / effectiveSales.length) * 100).toFixed(2) + '%',
+        Recaudacion: recaudacion
     }));
     const salesByDateSheet = xlsx.utils.json_to_sheet(salesByDateRows);
     xlsx.utils.book_append_sheet(workbook, salesByDateSheet, 'Ventas por fechas');
@@ -328,52 +375,55 @@ async function generateExcelFile(transactions) {
     const summarySheet = xlsx.utils.json_to_sheet([
         {
             'Total de ventas': effectiveSales.length,
-            'Recaudación total': `$${(totalSales).toLocaleString('es-ES')}`,
+            'Recaudación total': totalSales,
             'Venta promedio':
                 effectiveSales.length > 0
-                    ? `$${(totalSales / effectiveSales.length).toLocaleString('es-ES')}`
-                    : '$0'
+                    ? (totalSales / effectiveSales.length).toFixed(2)
+                    : 0
         },
     ]);
     xlsx.utils.book_append_sheet(workbook, summarySheet, 'Resumen de ventas');
 
     const paymentMethodsRows = Object.entries(paymentMethods).map(
-        ([method, count]) => ({
+        ([method, { count, recaudacion }]) => ({
             Tipo: 'Método',
             Metodo: method,
             Ventas: count,
             Porcentaje: ((count / effectiveSales.length) * 100).toFixed(2) + '%',
+            Recaudacion: recaudacion
         })
     );
 
     const paymentPlatformsRows = Object.entries(paymentPlatforms).map(
-        ([platform, count]) => ({
+        ([platform, { count, recaudacion }]) => ({
             Tipo: 'Plataforma',
             Metodo: platform,
             Ventas: count,
             Porcentaje: ((count / effectiveSales.length) * 100).toFixed(2) + '%',
+            Recaudacion: recaudacion
         })
     );
     
     const cardMethodsRows = Object.entries(cardMethods).map(
-        ([cards, count]) => ({
+        ([cards, { count, recaudacion }]) => ({
             Tipo: 'Cuotas',
             Metodo: cards,
             Ventas: count,
-            Porcentaje: ((count / effectiveSales.length) * 100).toFixed(2) + '%',
+            Porcentaje: ((count / totalVentasTarjeta) * 100).toFixed(2) + '%',
+            Recaudacion: recaudacion
         })
     );
 
     const paymentDataRows = [...paymentPlatformsRows, {}, ...paymentMethodsRows, {}, {}, ...cardMethodsRows];
-
+    
     const paymentMethodsSheet = xlsx.utils.json_to_sheet(paymentDataRows);
     xlsx.utils.book_append_sheet(workbook, paymentMethodsSheet, 'Metodos de pago');
 
     const productRows = Object.entries(productSummary).map(([sku, data]) => ({
         SKU: sku,
         Nombre: data.name,
-        'Cantidad de ventas': data.sold.toLocaleString('es-ES'),
-        'Ganancia por producto': `$${data.revenue.toLocaleString('es-ES')}`,
+        'Cantidad de ventas': data.sold,
+        'Ganancia por producto': data.revenue,
     }));
     const productsSheet = xlsx.utils.json_to_sheet(productRows);
     xlsx.utils.book_append_sheet(workbook, productsSheet, 'Productos');
@@ -381,9 +431,9 @@ async function generateExcelFile(transactions) {
     const shippingRows = Object.entries(shippingMethods).map(
         ([method, { count, cost }]) => ({
             'Metodo de envio': method,
-            'Costo por envio': count.toLocaleString('es-ES'),
+            'Costo por envio': count,
             'Porcentaje de envios': ((count / effectiveSales.length) * 100).toFixed(2) + '%',
-            'Costo': `$${(cost * 1).toLocaleString('es-ES')}`,
+            'Costo': cost,
         })
     );
     const shippingSheet = xlsx.utils.json_to_sheet(shippingRows);
