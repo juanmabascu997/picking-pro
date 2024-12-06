@@ -16,11 +16,11 @@ module.exports.getDashboardData = async (req, res) => {
         const primeraFecha = req.query.primeraFecha;
         const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
         const userId = payload.id;
-        
+
         let response = await getInfoByID(userId, primeraFecha)
         res.json(response)
     } catch (error) {
-        res.json({err: "Error has been ocurred in getDashboardData"});
+        res.json({ err: "Error has been ocurred in getDashboardData" });
     }
 }
 
@@ -30,16 +30,16 @@ module.exports.getTransactionsData = async (req, res) => {
         let today_init = new Date();
         let date_UTC = new Date();
         let today_date = date_UTC.toISOString().split("T")[0];
-        
-        date_UTC.setUTCHours(date_UTC.getUTCHours()-3)
+
+        date_UTC.setUTCHours(date_UTC.getUTCHours() - 3)
         today_init.setUTCHours(03,00,00);
-        today_end.setUTCHours(23,59,59);
+        today_end.setUTCHours(23, 59, 59);
 
         const storeinfoDB = await Store.find();
         let transactions = [];
         let transactions_db = [];
         let transactions_to_add = [];
-        console.log("Transacciones de hoy: ",  today_date);
+        console.log("Transacciones de hoy: ", today_date);
 
         // Traigo la data de cada una de las tiendas desde Tiendanube
         for (const stores of storeinfoDB) {
@@ -47,32 +47,32 @@ module.exports.getTransactionsData = async (req, res) => {
                 const orders_today = await Order.find({
                     store_id: stores.user_id,
                     payment_status: "paid",
-                    paid_at: { $gte: today_init}
+                    paid_at: { $gte: today_init }
                 })
 
                 const { data } = await axios.get(
                     `https://api.tiendanube.com/v1/${stores.user_id}/orders?created_at_min=${today_date}`,
                     {
                         headers: {
-                          Authentication: "bearer " + stores.access_token,
-                          "User-Agent": "picking-pro (nahuelezequiel20@gmail.com)",
+                            Authentication: "bearer " + stores.access_token,
+                            "User-Agent": "picking-pro (nahuelezequiel20@gmail.com)",
                         },
                     }
                 )
                 transactions_db.push({
-                    store:  stores.nombre,
+                    store: stores.nombre,
                     transactions: orders_today.length,
                 })
 
-                if(data) {
+                if (data) {
                     transactions.push({
-                        store:  stores.nombre,
+                        store: stores.nombre,
                         transactions: data.filter(e => e.payment_status === "paid").length,
                     })
                     // Busco las transacciones que no estan en la DB
 
-                    orders_today.map(async (internal)=>{
-                        if( await data.some((external)=>{
+                    orders_today.map(async (internal) => {
+                        if (await data.some((external) => {
                             return external.id === internal.id;
                         })) {
                         } else {
@@ -82,7 +82,7 @@ module.exports.getTransactionsData = async (req, res) => {
                     })
                 }
             } catch (error) {
-                if(error.response.data.code === 404) {
+                if (error.response.data.code === 404) {
                     console.log("No hay transacciones");
                     transactions.push([]);
                 }
@@ -95,11 +95,11 @@ module.exports.getTransactionsData = async (req, res) => {
             internalData: transactions_db,
             externalData: transactions,
             transactions_to_add: transactions_to_add,
-            date: today_date   
+            date: today_date
         });
     } catch (error) {
         console.log(error);
-        res.json({err: "Error has been ocurred"});
+        res.json({ err: "Error has been ocurred" });
     }
 }
 
@@ -112,24 +112,35 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
         const created_at_min = new Date(req.query.created_at_min);
         const created_at_max = new Date(req.query.created_at_max);
 
-        if(created_at_min > created_at_max) {
+        if (created_at_min > created_at_max) {
             return res.status(404).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
         }
 
         created_at_min.setHours(0, 0, 0);
         created_at_max.setHours(23, 59, 59);
-        
-        //Cambiar esto para que luego permita hacer la busqueda por mas tiendas al mismo tiempo
-        const storeName = req.query.storeName;
+
+        const storesNames = req.query.storeName.split("-");
 
         let page = 1;
         let hasMore = true;
+        const storesinfosDB = [];
 
-        const storeinfoDB = await Store.findOne({
-            nombre: storeName
-        });
+        for (const storeName of storesNames) {
+            const storeinfoDB = await Store.findOne({
+                nombre: storeName
+            });
+
+            if (!storeinfoDB) {
+                return res.status(404).send('Revise sus parametros. Una de las tiendas no fue encontrada.');
+            }
+
+            storesinfosDB.push(storeinfoDB);
+        }
         
-        if(storeinfoDB.nombre == storeName) {
+        for (let index = 0; index < storesinfosDB.length; index++) {
+            const storeinfoDB = storesinfosDB[index];
+            hasMore = true;
+            page = 1;
             while (hasMore) {
                 try {
                     const { data } = await axios.get(
@@ -147,8 +158,8 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
                             },
                         }
                     );
-    
-                    if(data) {
+
+                    if (data) {
                         transactions.push(...data);
                     }
 
@@ -160,30 +171,32 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
                     hasMore = false;
                 }
             }
-
-            if(transactions.length === 0) {
-                return res.status(404).send('Revise sus parametros. No se encontraron datos de busqueda.');
-            }
-           
-            const filePath = await generateExcelFile(transactions);
-
-            res.setHeader('Content-Disposition', `attachment; filename=resumen-de-ordenes.xlsx`);
-            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            res.download(filePath, (err) => {
-                if (err) {
-                    console.error('Error al descargar el archivo:', err);
-                    return res.status(500).send('Error al descargar el archivo');
-                } else {
-                    fs.unlinkSync(filePath);
-                }
-            });
-
-        } else {
-            return res.status(404).send('Revise sus parametros. No se encontró tienda seleccionada.');
         }
+
+        if (transactions.length === 0) {
+            return res.status(404).send('Revise sus parametros. No se encontraron datos de busqueda.');
+        }
+
+        transactions.sort((a, b) => {
+            return new Date(b.created_at) - new Date(a.created_at);
+        })
+        
+        const filePath = await generateExcelFile(transactions);
+
+        res.setHeader('Content-Disposition', `attachment; filename=resumen-de-ordenes.xlsx`);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.download(filePath, (err) => {
+            if (err) {
+                console.error('Error al descargar el archivo:', err);
+                return res.status(500).send('Error al descargar el archivo');
+            } else {
+                fs.unlinkSync(filePath);
+            }
+        });
+
     } catch (error) {
         console.error(error);
-        res.json({err: "Error has been ocurred"});
+        res.json({ err: "Error has been ocurred" });
     }
 }
 
@@ -206,10 +219,10 @@ async function formmaterDate(date) {
     };
     const fechaFormateada = new Intl.DateTimeFormat("es-AR", opciones).format(fechaArgentinaLocal);
 
-    return fechaFormateada 
+    return fechaFormateada
 }
 
-async function generateExcelFile(transactions) {      
+async function generateExcelFile(transactions) {
     let transacciones = [];
 
     for (let index = 0; index < transactions.length; index++) {
@@ -221,10 +234,10 @@ async function generateExcelFile(transactions) {
         let read_at = transactions[index].read_at;
 
         created_at = await formmaterDate(created_at);
-        if(closed_at) closed_at = await formmaterDate(closed_at);
-        if(cancelled_at) cancelled_at = await formmaterDate(cancelled_at);
-        if(paid_at) paid_at = await formmaterDate(paid_at);
-        if(read_at) read_at = await formmaterDate(read_at);
+        if (closed_at) closed_at = await formmaterDate(closed_at);
+        if (cancelled_at) cancelled_at = await formmaterDate(cancelled_at);
+        if (paid_at) paid_at = await formmaterDate(paid_at);
+        if (read_at) read_at = await formmaterDate(read_at);
 
         let store = await Store.findOne(
             { user_id: order.store_id },
@@ -240,8 +253,8 @@ async function generateExcelFile(transactions) {
             store_name: store.nombre
         })
     }
-    
-    const rows = transacciones.map((order) =>({
+
+    const rows = transacciones.map((order) => ({
         order_id: order.id,
         created_at: order.created_at,
         customer_name: order.customer?.name || 'N/A',
@@ -286,7 +299,7 @@ async function generateExcelFile(transactions) {
         shipping_carrier_name: order.shipping_carrier_name || 'N/A',
         shipping_status: order.shipping_status || 'N/A',
         paid_at: order.paid_at || null,
-    })); 
+    }));
 
     const effectiveSales = transactions.filter(
         (order) => order.payment_status === 'paid'
@@ -309,7 +322,7 @@ async function generateExcelFile(transactions) {
         acc[platform].recaudacion += Number(order.total) || 0;
         return acc;
     }, {});
-    
+
     const paymentMethods = effectiveSales.reduce((acc, order) => {
         const payment_method = order.payment_details?.method;
         acc[payment_method] = acc[payment_method] || { paymentMethod: payment_method, count: 0, recaudacion: 0 };
@@ -317,9 +330,9 @@ async function generateExcelFile(transactions) {
         acc[payment_method].recaudacion += Number(order.total) || 0;
         return acc;
     }, {});
-    
+
     const cardMethods = effectiveSales.reduce((acc, order) => {
-        if(order.payment_details.method == 'credit_card'){
+        if (order.payment_details.method == 'credit_card') {
             const card_installments = order.payment_details.installments;
             acc[card_installments] = acc[card_installments] || { cardMethod: card_installments, count: 0, recaudacion: 0 };
             acc[card_installments].count += 1;
@@ -334,7 +347,7 @@ async function generateExcelFile(transactions) {
         return acc + method.count;
     }, 0);
 
-    
+
     const shippingMethods = effectiveSales.reduce((acc, order) => {
         const method = order.shipping_option || 'Unknown';
         acc[method] = acc[method] || { count: 0, cost: 0 };
@@ -343,18 +356,18 @@ async function generateExcelFile(transactions) {
         return acc;
     }, {});
 
-    
-    const products = effectiveSales.map((order) => { 
+
+    const products = effectiveSales.map((order) => {
         return order.products || []
     }).flat();
-    
+
     const productSummary = products.reduce((acc, product) => {
-        
+
         const sku = product.sku || 'Unknown';
         acc[sku] = acc[sku] || { name: product.name, sold: 0, revenue: 0 };
         acc[sku].sold += Number(product.quantity) || 0;
         acc[sku].revenue += (Number(product.price) || 0) * (Number(product.quantity) || 0);
-        
+
         return acc;
     }, {});
 
@@ -403,7 +416,7 @@ async function generateExcelFile(transactions) {
             Recaudacion: recaudacion
         })
     );
-    
+
     const cardMethodsRows = Object.entries(cardMethods).map(
         ([cards, { count, recaudacion }]) => ({
             Tipo: 'Cuotas',
@@ -415,7 +428,7 @@ async function generateExcelFile(transactions) {
     );
 
     const paymentDataRows = [...paymentPlatformsRows, {}, ...paymentMethodsRows, {}, {}, ...cardMethodsRows];
-    
+
     const paymentMethodsSheet = xlsx.utils.json_to_sheet(paymentDataRows);
     xlsx.utils.book_append_sheet(workbook, paymentMethodsSheet, 'Metodos de pago');
 
