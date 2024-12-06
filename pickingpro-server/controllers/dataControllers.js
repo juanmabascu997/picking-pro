@@ -7,6 +7,7 @@ const xlsx = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 const { REFUSED } = require("dns");
+const _ = require('lodash');
 
 
 module.exports.getDashboardData = async (req, res) => {
@@ -253,7 +254,7 @@ async function generateExcelFile(transactions) {
             store_name: store.nombre
         })
     }
-
+    
     const rows = transacciones.map((order) => ({
         order_id: order.id,
         created_at: order.created_at,
@@ -301,23 +302,23 @@ async function generateExcelFile(transactions) {
         paid_at: order.paid_at || null,
     }));
 
-    const effectiveSales = transactions.filter(
+    const effectiveSales = transacciones.filter(
         (order) => order.payment_status === 'paid'
     );
 
     const totalSales = effectiveSales.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
-    const salesByDate = effectiveSales.reduce((acc, order) => {
-        const date = order.created_at.split('T')[0];
-        acc[date] = acc[date] || { date: date, count: 0, recaudacion: 0 };
+    const salesByDate = effectiveSales.reduce((acc, order) => {        
+        const date = order.created_at.split(',')[0] + '_' + order.store_name;
+        acc[date] = acc[date] || { date: date, count: 0, recaudacion: 0, tienda: order.store_name };
         acc[date].count += 1;
         acc[date].recaudacion += Number(order.total) || 0;
         return acc;
     }, {});
-
+    
     const paymentPlatforms = effectiveSales.reduce((acc, order) => {
         const platform = order.gateway || 'Unknown';
-        acc[platform] = acc[platform] || { platformMethod: platform, count: 0, recaudacion: 0 };
+        acc[platform] = acc[platform] || { platformMethod: platform, count: 0, recaudacion: 0, tienda: order.store_name };
         acc[platform].count += 1;
         acc[platform].recaudacion += Number(order.total) || 0;
         return acc;
@@ -325,7 +326,7 @@ async function generateExcelFile(transactions) {
 
     const paymentMethods = effectiveSales.reduce((acc, order) => {
         const payment_method = order.payment_details?.method;
-        acc[payment_method] = acc[payment_method] || { paymentMethod: payment_method, count: 0, recaudacion: 0 };
+        acc[payment_method] = acc[payment_method] || { paymentMethod: payment_method, count: 0, recaudacion: 0, tienda: order.store_name  };
         acc[payment_method].count += 1;
         acc[payment_method].recaudacion += Number(order.total) || 0;
         return acc;
@@ -334,7 +335,7 @@ async function generateExcelFile(transactions) {
     const cardMethods = effectiveSales.reduce((acc, order) => {
         if (order.payment_details.method == 'credit_card') {
             const card_installments = order.payment_details.installments;
-            acc[card_installments] = acc[card_installments] || { cardMethod: card_installments, count: 0, recaudacion: 0 };
+            acc[card_installments] = acc[card_installments] || { cardMethod: card_installments, count: 0, recaudacion: 0, tienda: order.store_name };
             acc[card_installments].count += 1;
             acc[card_installments].recaudacion += Number(order.total) || 0;
             return acc;
@@ -362,12 +363,10 @@ async function generateExcelFile(transactions) {
     }).flat();
 
     const productSummary = products.reduce((acc, product) => {
-
         const sku = product.sku || 'Unknown';
         acc[sku] = acc[sku] || { name: product.name, sold: 0, revenue: 0 };
         acc[sku].sold += Number(product.quantity) || 0;
         acc[sku].revenue += (Number(product.price) || 0) * (Number(product.quantity) || 0);
-
         return acc;
     }, {});
 
@@ -375,62 +374,92 @@ async function generateExcelFile(transactions) {
 
     const ordersSheet = xlsx.utils.json_to_sheet(rows);
     xlsx.utils.book_append_sheet(workbook, ordersSheet, 'Ordenes');
+// --------------------------------------------------------------------------------------------------------------------
+    
+    const totalVentasPorTienda = _.values(salesByDate).reduce((acc, order) =>{ 
+        const tienda = order.tienda;
+        acc[tienda] = acc[tienda] || { count: 0, recaudacion: 0 };
+        acc[tienda].recaudacion += order.recaudacion;
+        acc[tienda].count += order.count;
+        return acc;
+    }, {});
 
-    const salesByDateRows = Object.entries(salesByDate).map(([date, { count, recaudacion }]) => ({
-        Fecha: date,
+    const salesByDateAndStoresRows = _.groupBy(Object.entries(salesByDate).map(([date, { count, recaudacion, tienda }]) => ({
+        Fecha: date.split('_')[0],
+        Tienda: tienda,
         Cantidad: count,
-        'Porcentaje de ventas': ((count / effectiveSales.length) * 100).toFixed(2) + '%',
+        'Porcentaje de ventas': ((count / totalVentasPorTienda[tienda].count) * 100).toFixed(2) + '%',
         Recaudacion: recaudacion
-    }));
+    })), 'Tienda');
+
+    const salesByDateRows = [];
+
+    Object.entries(salesByDateAndStoresRows).map(([store, rows]) => {
+        salesByDateRows.push(...rows, {});
+    });
+    
     const salesByDateSheet = xlsx.utils.json_to_sheet(salesByDateRows);
     xlsx.utils.book_append_sheet(workbook, salesByDateSheet, 'Ventas por fechas');
+// --------------------------------------------------------------------------------------------------------------------
+    
+    
+    totalVentasPorTienda.Total = {
+        count: effectiveSales.length,
+        recaudacion: totalSales
+    };
+        
+    const summaryRows = Object.entries(totalVentasPorTienda).map(
+        ([tienda, { count, recaudacion }]) => ({
+            Tienda: tienda,
+            Ventas: count,
+            Recaudacion: recaudacion,
+            'Venta promedio': (recaudacion / count).toFixed(2)
+        })
+    );
 
-    const summarySheet = xlsx.utils.json_to_sheet([
-        {
-            'Total de ventas': effectiveSales.length,
-            'Recaudación total': totalSales,
-            'Venta promedio':
-                effectiveSales.length > 0
-                    ? (totalSales / effectiveSales.length).toFixed(2)
-                    : 0
-        },
-    ]);
+    const summarySheet = xlsx.utils.json_to_sheet(summaryRows);
     xlsx.utils.book_append_sheet(workbook, summarySheet, 'Resumen de ventas');
+// --------------------------------------------------------------------------------------------------------------------
+
 
     const paymentMethodsRows = Object.entries(paymentMethods).map(
-        ([method, { count, recaudacion }]) => ({
+        ([method, { count, recaudacion, tienda }]) => ({
             Tipo: 'Método',
             Metodo: method,
             Ventas: count,
+            Tienda: tienda,
             Porcentaje: ((count / effectiveSales.length) * 100).toFixed(2) + '%',
             Recaudacion: recaudacion
         })
     );
 
     const paymentPlatformsRows = Object.entries(paymentPlatforms).map(
-        ([platform, { count, recaudacion }]) => ({
+        ([platform, { count, recaudacion, tienda }]) => ({
             Tipo: 'Plataforma',
             Metodo: platform,
             Ventas: count,
+            Tienda: tienda,
             Porcentaje: ((count / effectiveSales.length) * 100).toFixed(2) + '%',
             Recaudacion: recaudacion
         })
     );
 
     const cardMethodsRows = Object.entries(cardMethods).map(
-        ([cards, { count, recaudacion }]) => ({
+        ([cards, { count, recaudacion, tienda }]) => ({
             Tipo: 'Cuotas',
             Metodo: cards,
             Ventas: count,
+            Tienda: tienda,
             Porcentaje: ((count / totalVentasTarjeta) * 100).toFixed(2) + '%',
             Recaudacion: recaudacion
         })
     );
 
     const paymentDataRows = [...paymentPlatformsRows, {}, ...paymentMethodsRows, {}, {}, ...cardMethodsRows];
-
     const paymentMethodsSheet = xlsx.utils.json_to_sheet(paymentDataRows);
     xlsx.utils.book_append_sheet(workbook, paymentMethodsSheet, 'Metodos de pago');
+
+// --------------------------------------------------------------------------------------------------------------------
 
     const productRows = Object.entries(productSummary).map(([sku, data]) => ({
         SKU: sku,
@@ -451,9 +480,48 @@ async function generateExcelFile(transactions) {
     );
     const shippingSheet = xlsx.utils.json_to_sheet(shippingRows);
     xlsx.utils.book_append_sheet(workbook, shippingSheet, 'Metodos de envios');
+// --------------------------------------------------------------------------------------------------------------------
 
     const filePath = path.join(__dirname, `resumen-de-ordenes.xlsx`);
     xlsx.writeFile(workbook, filePath);
 
     return filePath;
+}
+
+
+
+
+
+function generateRowsByStore(data, totalSales, type) {
+    const groupedByStore = {};
+
+    Object.entries(data).forEach(([key, { count, recaudacion, tienda }]) => {
+        if (!groupedByStore[tienda]) {
+            groupedByStore[tienda] = [];
+        }
+        groupedByStore[tienda].push({
+            Tipo: type,
+            Metodo: key,
+            Ventas: count.toLocaleString('es-ES'),
+            Tienda: tienda,
+            Porcentaje: ((count / totalSales) * 100).toFixed(2) + '%',
+            Recaudacion: recaudacion.toLocaleString('es-ES'),
+        });
+    });
+
+    const storeTotals = Object.keys(groupedByStore).map((store) => {
+        const storeData = groupedByStore[store];
+        const totalVentas = storeData.reduce((sum, row) => sum + parseInt(row.Ventas.replace(/\./g, ''), 10), 0);
+        const totalRecaudacion = storeData.reduce((sum, row) => sum + parseFloat(row.Recaudacion.replace(/\./g, '')), 0);
+        return {
+            Tipo: `Total ${type}`,
+            Metodo: 'Todos',
+            Ventas: totalVentas.toLocaleString('es-ES'),
+            Tienda: store,
+            Porcentaje: '100%',
+            Recaudacion: totalRecaudacion.toLocaleString('es-ES'),
+        };
+    });
+
+    return { groupedByStore, storeTotals };
 }
