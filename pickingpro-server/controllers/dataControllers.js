@@ -530,7 +530,7 @@ async function generateExcelFile(transactions) {
 
     const productRows = Object.entries(productSummary).map(([sku, data]) => ({
         SKU: sku,
-        tienda: data.tienda,
+        Tienda: data.tienda,
         Nombre: data.name,
         'Cantidad de ventas': data.sold,
         'Ganancia por producto': data.revenue,
