@@ -202,8 +202,8 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
 
 async function formmaterDate(date) {
     const formattedDateString = date.replace("+0000", "Z");
-    console.log('formattedDateString',formattedDateString);
-    
+    console.log("formattedDateString", formattedDateString);
+
     const zonaHoraria = "America/Buenos_Aires";
 
     const opciones = {
@@ -214,13 +214,15 @@ async function formmaterDate(date) {
         minute: "2-digit",
         second: "2-digit",
         hour12: false,
-        timeZone: zonaHoraria,
+        timeZone: zonaHoraria, // Usa directamente la zona horaria deseada
     };
 
-    const fecha = new Date(formattedDateString);
+    // No uses `new Date` explícitamente, Intl.DateTimeFormat lo maneja
+    const fechaFormateada = new Intl.DateTimeFormat("es-AR", opciones).format(
+        new Date(formattedDateString) // No es necesario calcular offset manualmente
+    );
 
-    const fechaFormateada = new Intl.DateTimeFormat("es-AR", opciones).format(fecha);
-    console.log('fechaFormateada',fechaFormateada);
+    console.log("fechaFormateada", fechaFormateada);
 
     return fechaFormateada;
 }
