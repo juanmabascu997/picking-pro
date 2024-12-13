@@ -202,7 +202,8 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
 
 async function formmaterDate(date) {
     const formattedDateString = date.replace("+0000", "Z");
-
+    console.log('formattedDateString',formattedDateString);
+    
     const zonaHoraria = "America/Buenos_Aires";
 
     const opciones = {
@@ -219,7 +220,7 @@ async function formmaterDate(date) {
     const fecha = new Date(formattedDateString);
 
     const fechaFormateada = new Intl.DateTimeFormat("es-AR", opciones).format(fecha);
-    console.log(fechaFormateada);
+    console.log('fechaFormateada',fechaFormateada);
 
     return fechaFormateada;
 }
