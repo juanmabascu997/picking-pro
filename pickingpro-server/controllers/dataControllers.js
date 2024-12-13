@@ -205,7 +205,7 @@ async function formmaterDate(date) {
 
     const zonaHoraria = "America/Buenos_Aires";
     const offset = fechaArgentina.getTimezoneOffset() * 60 * 1000;
-    const fechaArgentinaLocal = new Date(fechaArgentina.getTime() + offset);
+    const fechaArgentinaLocal = new Date(fechaArgentina.getTime());
 
     const opciones = {
         year: "numeric",
