@@ -115,8 +115,8 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
             return res.status(404).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
         }
 
-        created_at_min.setHours(0, 0, 0);
-        created_at_max.setHours(23, 59, 59);
+        // created_at_min.setHours(0, 0, 0);
+        // created_at_max.setHours(23, 59, 59);
         console.log(created_at_min, created_at_max);
         
         const storesNames = req.query.storeName.split("-");
@@ -205,7 +205,7 @@ async function formmaterDate(date) {
 
     const zonaHoraria = "America/Buenos_Aires";
     const offset = fechaArgentina.getTimezoneOffset() * 60 * 1000;
-    const fechaArgentinaLocal = new Date(fechaArgentina.getTime());
+    const fechaArgentinaLocal = new Date(fechaArgentina.getTime() + offset);
 
     const opciones = {
         year: "numeric",
@@ -218,7 +218,8 @@ async function formmaterDate(date) {
         timeZone: zonaHoraria,
     };
     const fechaFormateada = new Intl.DateTimeFormat("es-AR", opciones).format(fechaArgentinaLocal);
-
+    console.log(fechaFormateada);
+    
     return fechaFormateada
 }
 
