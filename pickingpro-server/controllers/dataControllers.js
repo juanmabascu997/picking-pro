@@ -201,9 +201,10 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
 }
 
 async function formmaterDate(date) {
+    const formattedDateString = date.replace("+0000", "Z");
+
     const zonaHoraria = "America/Buenos_Aires";
 
-    // Usar Intl.DateTimeFormat directamente con la zona horaria
     const opciones = {
         year: "numeric",
         month: "2-digit",
@@ -215,15 +216,18 @@ async function formmaterDate(date) {
         timeZone: zonaHoraria,
     };
 
-    const fechaFormateada = new Intl.DateTimeFormat("es-AR", opciones).format(new Date(date));
+    const fecha = new Date(formattedDateString);
+
+    const fechaFormateada = new Intl.DateTimeFormat("es-AR", opciones).format(fecha);
     console.log(fechaFormateada);
+
     return fechaFormateada;
 }
 
 
 async function generateExcelFile(transactions) {
     let transacciones = [];
-
+    
     for (let index = 0; index < transactions.length; index++) {
         const order = transactions[index];
         let created_at = transactions[index].created_at;
