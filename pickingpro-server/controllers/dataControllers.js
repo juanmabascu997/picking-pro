@@ -109,17 +109,20 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
     try {
         let transactions = [];
 
-        const created_at_min = new Date(req.query.created_at_min);
-        const created_at_max = new Date(req.query.created_at_max);
+        const created_at_min_raw = new Date(`${req.query.created_at_min}T00:00:00Z`);
+        const created_at_max_raw = new Date(`${req.query.created_at_max}T23:59:59Z`);
+
+        created_at_min_raw.setHours(created_at_min_raw.getHours() + 3);
+        // created_at_max_raw.setHours(created_at_max_raw.getHours() + 3);
+
+        const created_at_min = created_at_min_raw.toISOString();
+        const created_at_max = created_at_max_raw.toISOString();
 
         if (created_at_min > created_at_max) {
             return res.status(404).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
         }
-
-        // created_at_min.setHours(0, 0, 0);
-        // created_at_max.setHours(23, 59, 59);
         console.log(created_at_min, created_at_max);
-        
+      
         const storesNames = req.query.storeName.split("-");
 
         let page = 1;
@@ -289,6 +292,10 @@ async function generateExcelFile(transactions) {
         paid_at: order.paid_at || null,
     }));
 
+    console.log("id primero ", rows[0].number, "id ultimo ", rows[rows.length - 1].number);
+    console.log("fecha primeor", rows[0].created_at, "fecha ultimo", rows[rows.length - 1].created_at);
+
+    
     const effectiveSales = transacciones.filter(
         (order) => order.payment_status === 'paid'
     );
