@@ -7,6 +7,7 @@ const xlsx = require('xlsx');
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
+const { DateTime } = require("luxon");
 
 module.exports.getDashboardData = async (req, res) => {
     /* Recibo el id del usuario que mando la peticion */
@@ -201,27 +202,11 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
 }
 
 async function formmaterDate(date) {
-    const formattedDateString = date.replace("+0000", "Z");
-    console.log("formattedDateString", formattedDateString);
+    const fechaArgentina = DateTime.fromISO(date.replace("+0000", "Z"), {
+        zone: "UTC",
+    }).setZone("America/Buenos_Aires");
 
-    const zonaHoraria = "America/Buenos_Aires";
-
-    const opciones = {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-        timeZone: zonaHoraria, // Usa directamente la zona horaria deseada
-    };
-
-    // No uses `new Date` explícitamente, Intl.DateTimeFormat lo maneja
-    const fechaFormateada = new Intl.DateTimeFormat("es-AR", opciones).format(
-        new Date(formattedDateString) // No es necesario calcular offset manualmente
-    );
-
+    const fechaFormateada = fechaArgentina.toFormat("dd/MM/yyyy, HH:mm:ss");
     console.log("fechaFormateada", fechaFormateada);
 
     return fechaFormateada;
