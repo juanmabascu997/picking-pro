@@ -201,17 +201,11 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
     }
 }
 
-async function formmaterDate(date) {
-    console.log("formmaterDate",date);
-    
+async function formmaterDate(date) {    
     const fechaArgentina = DateTime.fromISO(date.replace("+0000", "Z"), {
         zone: "UTC",
     })
-    console.log("fechaArgentina",fechaArgentina);
-
     const fechaFormateada = fechaArgentina.toFormat("dd/MM/yyyy, HH:mm:ss");
-    console.log("fechaFormateada", fechaFormateada);
-
     return fechaFormateada;
 }
 
