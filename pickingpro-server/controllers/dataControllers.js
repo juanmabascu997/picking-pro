@@ -111,9 +111,8 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
 
         const created_at_min_raw = new Date(`${req.query.created_at_min}T00:00:00Z`);
         const created_at_max_raw = new Date(`${req.query.created_at_max}T23:59:59Z`);
-
         created_at_min_raw.setHours(created_at_min_raw.getHours() + 3);
-        // created_at_max_raw.setHours(created_at_max_raw.getHours() + 3);
+        created_at_max_raw.setHours(created_at_max_raw.getHours() + 3);
 
         const created_at_min = created_at_min_raw.toISOString();
         const created_at_max = created_at_max_raw.toISOString();
@@ -121,8 +120,6 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
         if (created_at_min > created_at_max) {
             return res.status(404).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
         }
-        console.log(created_at_min, created_at_max);
-      
         const storesNames = req.query.storeName.split("-");
 
         let page = 1;
@@ -185,7 +182,7 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
             return new Date(b.created_at) - new Date(a.created_at);
         })
 
-        const filePath = await generateExcelFile(transactions);
+        const filePath = await generateExcelFile(transactions, created_at_min_raw, created_at_max_raw);
 
         res.setHeader('Content-Disposition', `attachment; filename=resumen-de-ordenes.xlsx`);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -204,18 +201,21 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
     }
 }
 
-async function formmaterDate(date) {    
-    const fechaArgentina = DateTime.fromISO(date.replace("+0000", "Z"), {
-        zone: "UTC",
-    })
-    const fechaFormateada = fechaArgentina.toFormat("dd/MM/yyyy, HH:mm:ss");
-    return fechaFormateada;
+async function formmaterDate(date) {
+    return DateTime.fromISO(date.replace("+0000", "Z"), { zone: "UTC" })
+        .setZone("America/Buenos_Aires")
+        .toFormat("dd/MM/yyyy, HH:mm:ss");
 }
 
 
-async function generateExcelFile(transactions) {
+async function generateExcelFile(transactions, created_at_min_raw, created_at_max_raw) {
     let transacciones = [];
     
+    const created_at_min = new Date(created_at_min_raw)
+    created_at_min.setHours(created_at_min.getHours() + 3);
+    const created_at_max = new Date(created_at_max_raw)
+    created_at_max.setHours(created_at_max.getHours() + 3);
+
     for (let index = 0; index < transactions.length; index++) {
         const order = transactions[index];
         let created_at = transactions[index].created_at;
@@ -224,25 +224,31 @@ async function generateExcelFile(transactions) {
         let paid_at = transactions[index].paid_at;
         let read_at = transactions[index].read_at;
 
-        created_at = await formmaterDate(created_at);
-        if (closed_at) closed_at = await formmaterDate(closed_at);
-        if (cancelled_at) cancelled_at = await formmaterDate(cancelled_at);
-        if (paid_at) paid_at = await formmaterDate(paid_at);
-        if (read_at) read_at = await formmaterDate(read_at);
+        let newDate = new Date(created_at);
+        
+        if (newDate > created_at_max || newDate < created_at_min) {
+            transacciones = transacciones.filter(odr => odr.id !== order.id);
+        } else {
+            created_at = await formmaterDate(created_at);
+            if (closed_at) closed_at = await formmaterDate(closed_at);
+            if (cancelled_at) cancelled_at = await formmaterDate(cancelled_at);
+            if (paid_at) paid_at = await formmaterDate(paid_at);
+            if (read_at) read_at = await formmaterDate(read_at);
 
-        let store = await Store.findOne(
-            { user_id: order.store_id },
-            { nombre: 1, _id: 0 }
-        )
-        transacciones.push({
-            ...order,
-            created_at: created_at,
-            closed_at: closed_at,
-            cancelled_at: cancelled_at,
-            paid_at: paid_at,
-            read_at: read_at,
-            store_name: store.nombre
-        })
+            let store = await Store.findOne(
+                { user_id: order.store_id },
+                { nombre: 1, _id: 0 }
+            )
+            transacciones.push({
+                ...order,
+                created_at: created_at,
+                closed_at: closed_at,
+                cancelled_at: cancelled_at,
+                paid_at: paid_at,
+                read_at: read_at,
+                store_name: store.nombre
+            })
+        }
     }
 
     const rows = transacciones.map((order) => ({
@@ -291,10 +297,6 @@ async function generateExcelFile(transactions) {
         shipping_status: order.shipping_status || 'N/A',
         paid_at: order.paid_at || null,
     }));
-
-    console.log("id primero ", rows[0].number, "id ultimo ", rows[rows.length - 1].number);
-    console.log("fecha primeor", rows[0].created_at, "fecha ultimo", rows[rows.length - 1].created_at);
-
     
     const effectiveSales = transacciones.filter(
         (order) => order.payment_status === 'paid'
@@ -349,7 +351,7 @@ async function generateExcelFile(transactions) {
 
     const shippingMethods = effectiveSales.reduce((acc, order) => {
         const method = order.shipping_option || 'Unknown';
-        acc[method] = acc[method] || { method: method, count: 0, cost: 0,tienda: [] };
+        acc[method] = acc[method] || { method: method, count: 0, cost: 0, tienda: [] };
         acc[method].count += 1;
         acc[method].cost += Number(order.shipping_cost_owner) || 0;
         acc[method].tienda[order.store_name] = acc[method].tienda[order.store_name] || { store_name: order.store_name, count: 0, cost: 0 };
@@ -357,7 +359,7 @@ async function generateExcelFile(transactions) {
         acc[method].tienda[order.store_name].cost += Number(order.shipping_cost_owner) || 0;
         return acc;
     }, {});
-    
+
     const products = effectiveSales.map((order) => {
         return order.products || []
     }).flat();
@@ -421,7 +423,7 @@ async function generateExcelFile(transactions) {
     const summarySheet = xlsx.utils.json_to_sheet(summaryRows);
     xlsx.utils.book_append_sheet(workbook, summarySheet, 'Resumen de ventas');
     // --------------------------------------------------------------------------------------------------------------------
-    
+
     const data = [];
 
     Object.values(paymentMethods).forEach(({ paymentMethod, count, recaudacion, tienda }) => {
@@ -439,7 +441,7 @@ async function generateExcelFile(transactions) {
             (sum, t) => sum + t.count,
             0
         );
-        
+
         Object.values(tienda).forEach(({ store_name, recaudacion, count }) => {
             const storePercentage = ((count / totalStoreCount) * 100).toFixed(2) + '%';
 
@@ -471,7 +473,7 @@ async function generateExcelFile(transactions) {
             (sum, t) => sum + t.count,
             0
         );
-        
+
         Object.values(tienda).forEach(({ store_name, recaudacion, count }) => {
             const storePercentage = ((count / totalStoreCount) * 100).toFixed(2) + '%';
 
@@ -483,13 +485,13 @@ async function generateExcelFile(transactions) {
                 Porcentaje: storePercentage,
                 Recaudacion: recaudacion
             });
-        });        
+        });
     });
 
     data.push({});
-    
+
     Object.values(cardMethods).forEach(({ cardMethod, count, recaudacion, tienda }) => {
-        const totalPercentage = ((recaudacion / totalSales) * 100).toFixed(2) + '%';        
+        const totalPercentage = ((recaudacion / totalSales) * 100).toFixed(2) + '%';
         data.push({
             Tipo: 'Cuotas Total',
             Metodo: cardMethod,
@@ -503,7 +505,7 @@ async function generateExcelFile(transactions) {
             (sum, t) => sum + t.count,
             0
         );
-        
+
         Object.values(tienda).forEach(({ store_name, recaudacion, count }) => {
             const storePercentage = ((count / totalStoreCount) * 100).toFixed(2) + '%';
 
@@ -539,26 +541,26 @@ async function generateExcelFile(transactions) {
     const tiendaRows = []
 
     Object.values(shippingMethods).forEach(({ method, tienda }) => {
-            const totalStoreCount = Object.values(tienda).reduce(
-                (sum, t) => sum + t.count,
-                0
-            );
+        const totalStoreCount = Object.values(tienda).reduce(
+            (sum, t) => sum + t.count,
+            0
+        );
 
-            Object.values(tienda).forEach(({ store_name, cost, count }) => {
-                    const storePercentage = ((count / totalStoreCount) * 100).toFixed(2) + '%';
-                    tiendaRows.push({
-                    'Metodo de envio': method,
-                    'Tienda': store_name,
-                    'Cantidad de envíos': count,
-                    'Porcentaje de envíos por metodo': storePercentage,
-                    'Costo total': cost,
-                    })
-                })
-        }
-      );
-    
-      const tiendaSheet = xlsx.utils.json_to_sheet(tiendaRows);
-      xlsx.utils.book_append_sheet(workbook, tiendaSheet, 'Metodos de envios');
+        Object.values(tienda).forEach(({ store_name, cost, count }) => {
+            const storePercentage = ((count / totalStoreCount) * 100).toFixed(2) + '%';
+            tiendaRows.push({
+                'Metodo de envio': method,
+                'Tienda': store_name,
+                'Cantidad de envíos': count,
+                'Porcentaje de envíos por metodo': storePercentage,
+                'Costo total': cost,
+            })
+        })
+    }
+    );
+
+    const tiendaSheet = xlsx.utils.json_to_sheet(tiendaRows);
+    xlsx.utils.book_append_sheet(workbook, tiendaSheet, 'Metodos de envios');
     // --------------------------------------------------------------------------------------------------------------------
 
     const filePath = path.join(__dirname, `resumen-de-ordenes.xlsx`);
