@@ -109,15 +109,19 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
     try {
         let transactions = [];
 
-        const created_at_min_raw = new Date(`${req.query.created_at_min}T00:00:00Z`);
-        const created_at_max_raw = new Date(`${req.query.created_at_max}T23:59:59Z`);
-        created_at_min_raw.setHours(created_at_min_raw.getHours() + 3);
-        created_at_max_raw.setHours(created_at_max_raw.getHours() + 3);
+        const created_at_min_raw = DateTime.fromISO(req.query.created_at_min, { zone: "UTC" })
+            .startOf("day")
+            .plus({ hours: 3 })
+            .toUTC()
+            .toISO();
 
-        const created_at_min = created_at_min_raw.toISOString();
-        const created_at_max = created_at_max_raw.toISOString();
+        const created_at_max_raw = DateTime.fromISO(req.query.created_at_max, { zone: "UTC" })
+            .endOf("day")
+            .plus({ hours: 3 })
+            .toUTC()
+            .toISO();
 
-        if (created_at_min > created_at_max) {
+        if (created_at_min_raw > created_at_max_raw) {
             return res.status(404).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
         }
         const storesNames = req.query.storeName.split("-");
@@ -150,8 +154,8 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
                             params: {
                                 page,
                                 per_page: 30,
-                                created_at_min: created_at_min ?? null,
-                                created_at_max: created_at_max ?? null,
+                                created_at_min: created_at_min_raw ?? null,
+                                created_at_max: created_at_max_raw ?? null,
                             },
                             headers: {
                                 Authentication: "bearer " + storeinfoDB.access_token,
@@ -210,11 +214,14 @@ async function formmaterDate(date) {
 
 async function generateExcelFile(transactions, created_at_min_raw, created_at_max_raw) {
     let transacciones = [];
-    
-    const created_at_min = new Date(created_at_min_raw)
-    created_at_min.setHours(created_at_min.getHours() + 3);
-    const created_at_max = new Date(created_at_max_raw)
-    created_at_max.setHours(created_at_max.getHours() + 3);
+
+    const created_at_min = DateTime.fromJSDate(new Date(created_at_min_raw))
+        .minus({ hours: 3 })
+        .toUTC();
+
+    const created_at_max = DateTime.fromJSDate(new Date(created_at_max_raw))
+        .minus({ hours: 3 })
+        .toUTC();
 
     for (let index = 0; index < transactions.length; index++) {
         const order = transactions[index];
@@ -224,8 +231,11 @@ async function generateExcelFile(transactions, created_at_min_raw, created_at_ma
         let paid_at = transactions[index].paid_at;
         let read_at = transactions[index].read_at;
 
-        let newDate = new Date(created_at);
-        
+        const fechaArgentina = DateTime.fromISO(created_at.replace("+0000", "Z"), { zone: "UTC" })
+            .setZone("America/Buenos_Aires");
+
+        const newDate = fechaArgentina.minus({ hours: 3 }).toUTC();
+
         if (newDate > created_at_max || newDate < created_at_min) {
             transacciones = transacciones.filter(odr => odr.id !== order.id);
         } else {
@@ -297,7 +307,7 @@ async function generateExcelFile(transactions, created_at_min_raw, created_at_ma
         shipping_status: order.shipping_status || 'N/A',
         paid_at: order.paid_at || null,
     }));
-    
+
     const effectiveSales = transacciones.filter(
         (order) => order.payment_status === 'paid'
     );
