@@ -1,8 +1,8 @@
-const User = await import("../models/user");
-const jwt = await import("jsonwebtoken");
+const User = require("../models/user");
+const jwt = require("jsonwebtoken");
 
 
-export async function setPickingGoals(req, res, next) {
+module.exports.setPickingGoals = async (req, res, next) => {
     try {
 
         const myUser = req.query.token;
@@ -22,7 +22,7 @@ export async function setPickingGoals(req, res, next) {
     }
 }
 
-export async function setPackingGoals(req, res, next) {
+module.exports.setPackingGoals = async (req, res, next) => {
     try {
         const myUser = req.query.token;
         const email = req.query.email;
@@ -43,7 +43,7 @@ export async function setPackingGoals(req, res, next) {
 }
 
 
-export async function getGoals(req, res, next) {
+module.exports.getGoals = async (req, res, next) => {
     try {
         const email = req.query.email;
         let response = await User.findOne({email: email},{packingGoals: 1, pickingGoals: 1})

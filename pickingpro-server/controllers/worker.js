@@ -1,6 +1,6 @@
-const Store = await import("../models/store");
-const Order = await import("../models/orden");
-const axios = await import("axios");
+const Store = require("../models/store");
+const Order = require("../models/orden");
+const axios = require("axios");
 
 function getPreviousDay(date = new Date()) {
     const previous = new Date(date.getTime());

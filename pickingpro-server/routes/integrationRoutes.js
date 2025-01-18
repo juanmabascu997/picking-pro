@@ -1,4 +1,4 @@
-const express = await import("express");
+const express = require("express");
 const router = express.Router();
 const {
   getLabelToPrint,
@@ -17,7 +17,7 @@ const {
   getOrdersToShip,
   stopBeingPackaged,
   deleteStoreWebhoks
-} = await import("../controllers/integrationControllers");
+} = require("../controllers/integrationControllers");
 
 router.get("/", (req, res) => res.json({ message: "Inicio de API" }));
 

@@ -1,6 +1,6 @@
-const express = await import('express');
-const { register, login, validateUser, adminUser, resetPassword } = await import('../controllers/authControllers');
-const { checkUser } = await import('../middlewares/authMiddleware');
+const express = require('express');
+const { register, login, validateUser, adminUser, resetPassword } = require('../controllers/authControllers');
+const { checkUser } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 router.post('/register', register);

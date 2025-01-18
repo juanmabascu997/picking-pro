@@ -1,10 +1,10 @@
-const Store = await import("../models/store");
-const Order = await import("../models/orden");
-const axios = await import("axios");
-const jwt = await import("jsonwebtoken");
-const { writeFile } = await import("fs/promises");
-const fs = await import("fs");
-const User = await import("../models/user");
+const Store = require("../models/store");
+const Order = require("../models/orden");
+const axios = require("axios");
+const jwt = require("jsonwebtoken");
+const { writeFile } = require("fs/promises");
+const fs = require("fs");
+const User = require("../models/user");
 
 async function duplicados(id, _id) {
   try {

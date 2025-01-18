@@ -1,6 +1,6 @@
-const User = await import("../models/user");
-const jwt = await import("jsonwebtoken");
-const bcrypt = await import("bcrypt");
+const User = require("../models/user");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 
 const maxAge = 3 * 24 * 60 * 60;
 
@@ -35,7 +35,7 @@ const handleErrors = (err) => {
   return errors;
 };
 
-export async function register(req, res, next) {
+module.exports.register = async (req, res, next) => {
   try {
     const { email, password, name } = req.body;
     const user = await User.create({ name, email, password });
@@ -49,9 +49,9 @@ export async function register(req, res, next) {
     const errors = handleErrors(err);
     res.json({ errors, created: false });
   }
-}
+};
 
-export async function login(req, res, next) {
+module.exports.login = async (req, res, next) => {
   const { email, password } = req.body;
   try {
     const user = await User.login(email, password);
@@ -75,10 +75,10 @@ export async function login(req, res, next) {
     const errors = handleErrors(err);
     res.json({ errors, status: false });
   }
-}
+};
 
 
-export async function validateUser(req, res, next) {
+module.exports.validateUser = async (req, res, next) => {
     const { email, password, toValidate, validate } = req.body;
     try {
         const usuarioValidador = await User.login(email, password);
@@ -116,10 +116,10 @@ export async function validateUser(req, res, next) {
       const errors = handleErrors(err);
       res.json({ errors, status: false });
     }
-}
+};
 
 
-export async function adminUser(req, res, next) {
+module.exports.adminUser = async (req, res, next) => {
   const { email, password, toValidate, validate } = req.body;
   try {
       const usuarioValidador = await User.login(email, password);
@@ -157,10 +157,10 @@ export async function adminUser(req, res, next) {
     const errors = handleErrors(err);
     res.json({ errors, status: false });
   }
-}
+};
 
 
-export async function resetPassword(req, res, next) {
+module.exports.resetPassword = async (req, res, next) => {
   const { email, password, newMail, newPassword  } = req.body;
   try {
       const usuarioValidador = await User.login(email, password);

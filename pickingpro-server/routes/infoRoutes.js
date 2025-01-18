@@ -1,5 +1,5 @@
-const express = await import('express');
-const { getUserData, getStoreData, getUsersData, getUserDataDashboard, getPedidosFromId, getShippingMethods } = await import('../controllers/infoControllers');
+const express = require('express');
+const { getUserData, getStoreData, getUsersData, getUserDataDashboard, getPedidosFromId, getShippingMethods } = require('../controllers/infoControllers');
 const router = express.Router();
 
 router.get('/user-data', getUserData);

@@ -1,6 +1,6 @@
-const Estanteria = await import("../models/estanteria");
+const Estanteria = require("../models/estanteria");
 
-export async function createEstanteria(req, res, next) {
+module.exports.createEstanteria = async (req, res, next) => {
     try {
       const {  nombre, capacidad, token } = req.body;
       
@@ -16,9 +16,9 @@ export async function createEstanteria(req, res, next) {
     } catch (err) {
       res.json(err);
     }
-}
+};
 
-export async function getEstanterias(req, res, next) {
+module.exports.getEstanterias = async (req, res, next) => {
     try {
       const estanterias = await Estanteria.find();
 
@@ -28,4 +28,4 @@ export async function getEstanterias(req, res, next) {
     } catch (err) {
       res.json(err);
     }
-}
+};

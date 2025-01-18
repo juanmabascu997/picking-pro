@@ -1,4 +1,4 @@
-const Order = await import("../models/orden");
+const Order = require("../models/orden");
 
 const days = (date_1, date_2) => {
   let difference = date_1.getTime() - date_2.getTime();

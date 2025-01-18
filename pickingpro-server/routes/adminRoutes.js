@@ -1,5 +1,5 @@
-const express = await import('express');
-const { setPickingGoals, setPackingGoals, getGoals } = await import('../controllers/adminControllers');
+const express = require('express');
+const { setPickingGoals, setPackingGoals, getGoals } = require('../controllers/adminControllers');
 const router = express.Router();
 
 router.post('/set-picking-goals', setPickingGoals);
