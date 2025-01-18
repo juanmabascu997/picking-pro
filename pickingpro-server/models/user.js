@@ -1,6 +1,6 @@
-const mongoose = require("mongoose");
+const mongoose = await import("mongoose");
 const Schema = mongoose.Schema;
-const bcrypt = require("bcrypt");
+const bcrypt = await import("bcrypt");
 
 const userSchema = new Schema({
   name: {

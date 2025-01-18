@@ -1,11 +1,11 @@
-const Store = require("../models/store");
-const Order = require("../models/orden");
-const axios = require("axios");
-const jwt = require("jsonwebtoken");
-const User = require("../models/user");
-const { getInfoByID } = require("../middlewares/infoMiddleware");
+const Store = await import("../models/store");
+const Order = await import("../models/orden");
+const axios = await import("axios");
+const jwt = await import("jsonwebtoken");
+const User = await import("../models/user");
+const { getInfoByID } = await import("../middlewares/infoMiddleware");
 
-module.exports.getUserData = async (req, res) => {
+export async function getUserData(req, res) {
     try {
         const token = req.query.token;
         const payload = jwt.verify(token, "my-secret-key"); //Obtengo ID del usuario conectado
@@ -24,7 +24,7 @@ module.exports.getUserData = async (req, res) => {
     }
 }
 
-module.exports.getUsersData = async (req, res) => {
+export async function getUsersData(req, res) {
     try {
         let users = await User.find({
             active: 1,
@@ -36,7 +36,7 @@ module.exports.getUsersData = async (req, res) => {
     }
 }
 
-module.exports.getStoreData = async (req, res) => {
+export async function getStoreData(req, res) {
     try {
         const storeId = req.query;
         console.log("Traer Store info:", storeId);
@@ -49,7 +49,7 @@ module.exports.getStoreData = async (req, res) => {
     }
 }
 
-module.exports.getPedidosFromId = async (req, res) => {
+export async function getPedidosFromId(req, res) {
     try {
         const myUser = req.query.myUser;
         const pedidoId = req.query.pedidoId;
@@ -74,7 +74,7 @@ module.exports.getPedidosFromId = async (req, res) => {
 }
 
 
-module.exports.getUserDataDashboard = async (req, res) => {
+export async function getUserDataDashboard(req, res) {
     try {
         const myUser = req.query.myUser;
         const findUserId = req.query.findUserId;
@@ -101,7 +101,7 @@ function removeDuplicates(arr) {
         index) => arr.indexOf(item) === index);
 }
 
-module.exports.getShippingMethods = async (req, res) => {
+export async function getShippingMethods(req, res) {
     try {  
         let methods = [];
         

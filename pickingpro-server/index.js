@@ -1,6 +1,6 @@
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
+const express = await import("express");
+const cors = await import("cors");
+const mongoose = await import("mongoose");
 
 const app = express();
 
@@ -22,20 +22,20 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use('/api', require('./routes/integrationRoutes'));
-app.use('/auth', require('./routes/authRoutes'));
-app.use('/data', require('./routes/dataRoutes'));
-app.use('/info', require('./routes/infoRoutes'));
-app.use('/picking', require('./routes/pickingRoutes'));
-app.use('/estanteria', require('./routes/estanteriaRoutes'));
-app.use('/admin', require('./routes/adminRoutes'));
+app.use('/api', await import('./routes/integrationRoutes'));
+app.use('/auth', await import('./routes/authRoutes'));
+app.use('/data', await import('./routes/dataRoutes'));
+app.use('/info', await import('./routes/infoRoutes'));
+app.use('/picking', await import('./routes/pickingRoutes'));
+app.use('/estanteria', await import('./routes/estanteriaRoutes'));
+app.use('/admin', await import('./routes/adminRoutes'));
 
-app.use('/test', require('./routes/testRoutes'));
+app.use('/test', await import('./routes/testRoutes'));
 
-// var Agenda = require('agenda');
+// var Agenda = await import('agenda');
 
 
-// const { getTransactionsDataWorker } = require("./controllers/worker");
+// const { getTransactionsDataWorker } = await import("./controllers/worker");
 
 
 // var agenda = new Agenda({db: {address: uri}});

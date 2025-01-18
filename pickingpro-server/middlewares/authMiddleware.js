@@ -1,5 +1,5 @@
-const User = require("../models/user");
-const jwt = require("jsonwebtoken");
+const User = await import("../models/user");
+const jwt = await import("jsonwebtoken");
 
 module.exports.checkUser = (req, res, next) => {
   const token = req.body.mydata;

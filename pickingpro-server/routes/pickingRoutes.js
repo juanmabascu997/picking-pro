@@ -1,5 +1,5 @@
-const express = require('express');
-const { cancelProductsForPick, getProductsToPickByMatch } = require('../controllers/pickingControllers');
+const express = await import('express');
+const { cancelProductsForPick, getProductsToPickByMatch } = await import('../controllers/pickingControllers');
 const router = express.Router();
 
 

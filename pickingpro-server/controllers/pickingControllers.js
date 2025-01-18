@@ -1,6 +1,6 @@
-const Order = require("../models/orden");
-const jwt = require("jsonwebtoken");
-const User = require("../models/user");
+const Order = await import("../models/orden");
+const jwt = await import("jsonwebtoken");
+const User = await import("../models/user");
 
 //PARA PROBAR: Metodo para cuando se guarda un cambio en el schema. Para evitar duplicados.
 

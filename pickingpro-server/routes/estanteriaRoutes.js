@@ -1,5 +1,5 @@
-const express = require('express');
-const { createEstanteria, getEstanterias } = require('../controllers/estanteriaControllers');
+const express = await import('express');
+const { createEstanteria, getEstanterias } = await import('../controllers/estanteriaControllers');
 
 const router = express.Router();
 

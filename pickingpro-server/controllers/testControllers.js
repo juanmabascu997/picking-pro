@@ -1,4 +1,4 @@
-const Order = require("../models/orden");
+const Order = await import("../models/orden");
 
 module.exports.getPedidosFromId = async (req, res) => {
     try {

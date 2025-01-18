@@ -1,15 +1,15 @@
-const Store = require("../models/store");
-const Order = require("../models/orden");
-const axios = require("axios");
-const jwt = require("jsonwebtoken");
-const { getInfoByID } = require("../middlewares/infoMiddleware");
-const xlsx = require('xlsx');
-const fs = require('fs');
-const path = require('path');
-const _ = require('lodash');
-const { DateTime } = require("luxon");
+const Store = await import("../models/store");
+const Order = await import("../models/orden");
+const axios = await import("axios");// ../models/store.mjs
+const jwt = await import("jsonwebtoken");
+const { getInfoByID } = await import("../middlewares/infoMiddleware");
+const xlsx = await import('xlsx');
+const fs = await import('fs');
+const path = await import('path');
+const _ = await import('lodash');
+const { DateTime } = await import("luxon");
 
-module.exports.getDashboardData = async (req, res) => {
+export async function getDashboardData(req, res) {
     /* Recibo el id del usuario que mando la peticion */
     try {
         const token = req.query.token;
@@ -24,7 +24,7 @@ module.exports.getDashboardData = async (req, res) => {
     }
 }
 
-module.exports.getTransactionsData = async (req, res) => {
+export async function getTransactionsData(req, res) {
     try {
         let today_end = new Date();
         let today_init = new Date();
@@ -32,7 +32,7 @@ module.exports.getTransactionsData = async (req, res) => {
         let today_date = date_UTC.toISOString().split("T")[0];
 
         date_UTC.setUTCHours(date_UTC.getUTCHours() - 3)
-        today_init.setUTCHours(03,00,00);
+        today_init.setUTCHours(3, 0, 0);
         today_end.setUTCHours(23, 59, 59);
 
         const storeinfoDB = await Store.find();
@@ -105,7 +105,7 @@ module.exports.getTransactionsData = async (req, res) => {
 
 
 
-module.exports.getTransactionsDataByDate = async (req, res) => {
+export async function getTransactionsDataByDate(req, res) {
     try {
         let transactions = [];
 
