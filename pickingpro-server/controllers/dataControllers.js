@@ -191,11 +191,25 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename=resumen-de-ordenes.xlsx`);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.download(filePath, (err) => {
-            if (err) {
-                console.error('Error al descargar el archivo:', err);
-                return res.status(500).send('Error al descargar el archivo');
-            } else {
-                fs.unlinkSync(filePath);
+            try {
+                if (err) {
+                    // Client-side aborts are expected occasionally (navigation, timeout, manual cancel).
+                    if (err.code === 'ECONNABORTED' || err.code === 'ECONNRESET') {
+                        console.warn('Descarga interrumpida por el cliente:', err.code);
+                        return;
+                    }
+
+                    console.error('Error al descargar el archivo:', err);
+                    if (!res.headersSent) {
+                        return res.status(500).send('Error al descargar el archivo');
+                    }
+                }
+            } finally {
+                fs.unlink(filePath, (unlinkErr) => {
+                    if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+                        console.error('No se pudo eliminar el archivo temporal:', unlinkErr);
+                    }
+                });
             }
         });
 
