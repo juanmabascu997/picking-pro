@@ -4,8 +4,6 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const { getInfoByID } = require("../middlewares/infoMiddleware");
 const xlsx = require('xlsx');
-const fs = require('fs');
-const path = require('path');
 const _ = require('lodash');
 const { DateTime } = require("luxon");
 
@@ -186,33 +184,14 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
             return new Date(b.created_at) - new Date(a.created_at);
         })
 
-        const filePath = await generateExcelFile(transactions, created_at_min_raw, created_at_max_raw);
-        console.log("Archivo generado en:", filePath);
-        res.setHeader('Content-Disposition', `attachment; filename=resumen-de-ordenes.xlsx`);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        console.log("Iniciando descarga del archivo...");
-        res.download(filePath, (err) => {
-            try {
-                if (err) {
-                    // Client-side aborts are expected occasionally (navigation, timeout, manual cancel).
-                    if (err.code === 'ECONNABORTED' || err.code === 'ECONNRESET') {
-                        console.warn('Descarga interrumpida por el cliente:', err.code);
-                        return;
-                    }
+        const excelBuffer = await generateExcelFile(transactions, created_at_min_raw, created_at_max_raw);
 
-                    console.error('Error al descargar el archivo:', err);
-                    if (!res.headersSent) {
-                        return res.status(500).send('Error al descargar el archivo');
-                    }
-                }
-            } finally {
-                fs.unlink(filePath, (unlinkErr) => {
-                    if (unlinkErr && unlinkErr.code !== 'ENOENT') {
-                        console.error('No se pudo eliminar el archivo temporal:', unlinkErr);
-                    }
-                });
-            }
-        });
+        res.setHeader('Content-Disposition', 'attachment; filename="resumen-de-ordenes.xlsx"');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Length', excelBuffer.length);
+
+        console.log("Iniciando descarga del archivo...");
+        res.status(200).end(excelBuffer);
 
     } catch (error) {
         console.error(error);
@@ -588,8 +567,5 @@ async function generateExcelFile(transactions, created_at_min_raw, created_at_ma
     xlsx.utils.book_append_sheet(workbook, tiendaSheet, 'Metodos de envios');
     // --------------------------------------------------------------------------------------------------------------------
 
-    const filePath = path.join(__dirname, `resumen-de-ordenes.xlsx`);
-    xlsx.writeFile(workbook, filePath);
-
-    return filePath;
+    return xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
 }
