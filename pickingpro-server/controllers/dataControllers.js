@@ -187,9 +187,10 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
         })
 
         const filePath = await generateExcelFile(transactions, created_at_min_raw, created_at_max_raw);
-
+        console.log("Archivo generado en:", filePath);
         res.setHeader('Content-Disposition', `attachment; filename=resumen-de-ordenes.xlsx`);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        console.log("Iniciando descarga del archivo...");
         res.download(filePath, (err) => {
             try {
                 if (err) {
