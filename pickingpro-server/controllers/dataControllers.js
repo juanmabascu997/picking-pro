@@ -6,6 +6,19 @@ const { getInfoByID } = require("../middlewares/infoMiddleware");
 const xlsx = require('xlsx');
 const _ = require('lodash');
 const { DateTime } = require("luxon");
+const crypto = require("crypto");
+
+// In-memory job store (jobId -> { status, buffer, error, createdAt })
+const exportJobs = new Map();
+
+// Clean up jobs older than 10 minutes periodically
+setInterval(() => {
+    const TEN_MIN = 10 * 60 * 1000;
+    const now = Date.now();
+    for (const [id, job] of exportJobs) {
+        if (now - job.createdAt > TEN_MIN) exportJobs.delete(id);
+    }
+}, 2 * 60 * 1000);
 
 module.exports.getDashboardData = async (req, res) => {
     /* Recibo el id del usuario que mando la peticion */
@@ -104,46 +117,94 @@ module.exports.getTransactionsData = async (req, res) => {
 
 
 module.exports.getTransactionsDataByDate = async (req, res) => {
+    const created_at_min_raw = DateTime.fromISO(req.query.created_at_min, { zone: "UTC" })
+        .startOf("day")
+        .plus({ hours: 3 })
+        .toUTC()
+        .toISO();
+
+    const created_at_max_raw = DateTime.fromISO(req.query.created_at_max, { zone: "UTC" })
+        .endOf("day")
+        .plus({ hours: 3 })
+        .toUTC()
+        .toISO();
+
+    if (created_at_min_raw > created_at_max_raw) {
+        return res.status(400).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
+    }
+
+    const storesNames = req.query.storeName.split("-");
+    const storesinfosDB = [];
+
+    for (const storeName of storesNames) {
+        const storeinfoDB = await Store.findOne({ nombre: storeName });
+        if (!storeinfoDB) {
+            return res.status(404).send('Revise sus parametros. Una de las tiendas no fue encontrada.');
+        }
+        storesinfosDB.push(storeinfoDB);
+    }
+
+    // Generate a unique job ID and register the job
+    const jobId = crypto.randomBytes(12).toString("hex");
+    exportJobs.set(jobId, { status: "processing", buffer: null, error: null, createdAt: Date.now() });
+
+    // Start background processing (does NOT block the response)
+    processExportJob(jobId, storesinfosDB, created_at_min_raw, created_at_max_raw);
+
+    // Respond immediately with a polling page so Railway's proxy doesn't time out
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.status(202).send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <title>Generando reporte…</title>
+  <style>
+    body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f5f5f5}
+    .card{background:#fff;padding:2rem 3rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);text-align:center}
+    .spinner{width:48px;height:48px;border:5px solid #e0e0e0;border-top-color:#1976d2;border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 1.5rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    p{color:#555;margin:.5rem 0}
+    .error{color:#c62828}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner" id="spinner"></div>
+    <p id="msg">Generando reporte, por favor espere&hellip;</p>
+    <p id="sub" style="font-size:.85rem;color:#888">Esto puede tardar varios minutos según el rango de fechas.</p>
+  </div>
+  <script>
+    (function poll(){
+      fetch('/data/job-status/${jobId}')
+        .then(function(r){return r.json()})
+        .then(function(d){
+          if(d.status==='done'){
+            document.getElementById('msg').textContent='¡Listo! Descargando archivo…';
+            document.getElementById('sub').textContent='';
+            document.getElementById('spinner').style.borderTopColor='#2e7d32';
+            window.location.href='/data/job-download/${jobId}';
+          } else if(d.status==='error'){
+            document.getElementById('spinner').style.display='none';
+            document.getElementById('msg').className='error';
+            document.getElementById('msg').textContent='Error: '+(d.error||'desconocido');
+          } else {
+            setTimeout(poll,3000);
+          }
+        })
+        .catch(function(){setTimeout(poll,5000)});
+    })();
+  </script>
+</body>
+</html>`);
+};
+
+async function processExportJob(jobId, storesinfosDB, created_at_min_raw, created_at_max_raw) {
     try {
         let transactions = [];
 
-        const created_at_min_raw = DateTime.fromISO(req.query.created_at_min, { zone: "UTC" })
-            .startOf("day")
-            .plus({ hours: 3 })
-            .toUTC()
-            .toISO();
-
-        const created_at_max_raw = DateTime.fromISO(req.query.created_at_max, { zone: "UTC" })
-            .endOf("day")
-            .plus({ hours: 3 })
-            .toUTC()
-            .toISO();
-
-        if (created_at_min_raw > created_at_max_raw) {
-            return res.status(404).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
-        }
-        const storesNames = req.query.storeName.split("-");
-
-        let page = 1;
-        let hasMore = true;
-        const storesinfosDB = [];
-
-        for (const storeName of storesNames) {
-            const storeinfoDB = await Store.findOne({
-                nombre: storeName
-            });
-
-            if (!storeinfoDB) {
-                return res.status(404).send('Revise sus parametros. Una de las tiendas no fue encontrada.');
-            }
-
-            storesinfosDB.push(storeinfoDB);
-        }
-
-        for (let index = 0; index < storesinfosDB.length; index++) {
-            const storeinfoDB = storesinfosDB[index];
-            hasMore = true;
-            page = 1;
+        for (const storeinfoDB of storesinfosDB) {
+            let page = 1;
+            let hasMore = true;
             while (hasMore) {
                 try {
                     const { data } = await axios.get(
@@ -152,8 +213,8 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
                             params: {
                                 page,
                                 per_page: 30,
-                                created_at_min: created_at_min_raw ?? null,
-                                created_at_max: created_at_max_raw ?? null,
+                                created_at_min: created_at_min_raw,
+                                created_at_max: created_at_max_raw,
                             },
                             headers: {
                                 Authentication: "bearer " + storeinfoDB.access_token,
@@ -162,42 +223,52 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
                         }
                     );
 
-                    if (data) {
-                        transactions.push(...data);
-                    }
-
-                    console.log(`Page ${page}: ${data.length} orders retrieved.`);
+                    if (data) transactions.push(...data);
+                    console.log(`[job ${jobId}] Page ${page}: ${data.length} orders retrieved.`);
                     hasMore = data.length === 30;
                     page++;
                 } catch (error) {
-                    console.error(`Error fetching orders for store ${storeinfoDB.nombre} on page ${page}:`, error.message);
+                    console.error(`[job ${jobId}] Error fetching page ${page} for store ${storeinfoDB.nombre}:`, error.message);
                     hasMore = false;
                 }
             }
         }
 
         if (transactions.length === 0) {
-            return res.status(404).send('Revise sus parametros. No se encontraron datos de busqueda.');
+            exportJobs.set(jobId, { ...exportJobs.get(jobId), status: "error", error: "No se encontraron datos para el rango de fechas seleccionado." });
+            return;
         }
 
-        transactions.sort((a, b) => {
-            return new Date(b.created_at) - new Date(a.created_at);
-        })
+        transactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-        const excelBuffer = await generateExcelFile(transactions, created_at_min_raw, created_at_max_raw);
-
-        res.setHeader('Content-Disposition', 'attachment; filename="resumen-de-ordenes.xlsx"');
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Length', excelBuffer.length);
-
-        console.log("Iniciando descarga del archivo...");
-        res.status(200).end(excelBuffer);
-
-    } catch (error) {
-        console.error(error);
-        res.json({ err: "Error has been ocurred" });
+        const buffer = await generateExcelFile(transactions, created_at_min_raw, created_at_max_raw);
+        exportJobs.set(jobId, { ...exportJobs.get(jobId), status: "done", buffer });
+        console.log(`[job ${jobId}] Excel generado. ${transactions.length} transacciones.`);
+    } catch (err) {
+        console.error(`[job ${jobId}] Error en processExportJob:`, err);
+        exportJobs.set(jobId, { ...exportJobs.get(jobId), status: "error", error: err.message });
     }
 }
+
+module.exports.getJobStatus = (req, res) => {
+    const job = exportJobs.get(req.params.jobId);
+    if (!job) return res.status(404).json({ status: "not_found" });
+    res.json({ status: job.status, error: job.error || null });
+};
+
+module.exports.getJobDownload = (req, res) => {
+    const job = exportJobs.get(req.params.jobId);
+    if (!job || job.status !== "done" || !job.buffer) {
+        return res.status(404).send("Archivo no disponible o aún en proceso.");
+    }
+    res.setHeader("Content-Disposition", 'attachment; filename="resumen-de-ordenes.xlsx"');
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Length", job.buffer.length);
+    res.status(200).end(job.buffer);
+
+    // Remove from memory after download
+    setTimeout(() => exportJobs.delete(req.params.jobId), 5 * 60 * 1000);
+};
 
 async function formmaterDate(date) {
     return DateTime.fromISO(date.replace("+0000", "Z"), { zone: "UTC" })
