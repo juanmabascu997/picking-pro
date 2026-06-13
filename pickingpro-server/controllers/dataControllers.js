@@ -117,29 +117,33 @@ module.exports.getTransactionsData = async (req, res) => {
 
 
 module.exports.getTransactionsDataByDate = async (req, res) => {
-    const created_at_min_raw = DateTime.fromISO(req.query.created_at_min, { zone: "UTC" })
-        .startOf("day")
-        .plus({ hours: 3 })
-        .toUTC()
-        .toISO();
+    const { created_at_min: qMin, created_at_max: qMax, storeName: qStore } = req.query;
 
-    const created_at_max_raw = DateTime.fromISO(req.query.created_at_max, { zone: "UTC" })
-        .endOf("day")
-        .plus({ hours: 3 })
-        .toUTC()
-        .toISO();
+    if (!qMin || !qMax || !qStore) {
+        return res.status(400).send('Faltan parámetros requeridos: created_at_min, created_at_max, storeName.');
+    }
 
-    if (created_at_min_raw > created_at_max_raw) {
+    const dtMin = DateTime.fromISO(qMin, { zone: "America/Buenos_Aires" }).startOf("day");
+    const dtMax = DateTime.fromISO(qMax, { zone: "America/Buenos_Aires" }).endOf("day");
+
+    if (!dtMin.isValid || !dtMax.isValid) {
+        return res.status(400).send('Formato de fecha inválido. Use YYYY-MM-DD.');
+    }
+
+    if (dtMin > dtMax) {
         return res.status(400).send('Revise sus parametros. La fecha minima es mayor que la maxima.');
     }
 
-    const storesNames = req.query.storeName.split("-");
+    const created_at_min_raw = dtMin.toUTC().toISO();
+    const created_at_max_raw = dtMax.toUTC().toISO();
+
+    const storesNames = qStore.split("-");
     const storesinfosDB = [];
 
     for (const storeName of storesNames) {
         const storeinfoDB = await Store.findOne({ nombre: storeName });
         if (!storeinfoDB) {
-            return res.status(404).send('Revise sus parametros. Una de las tiendas no fue encontrada.');
+            return res.status(404).send(`Revise sus parametros. La tienda "${storeName}" no fue encontrada.`);
         }
         storesinfosDB.push(storeinfoDB);
     }
@@ -160,11 +164,11 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
   <title>Generando reporte…</title>
   <style>
     body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f5f5f5}
-    .card{background:#fff;padding:2rem 3rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);text-align:center}
+    .card{background:#fff;padding:2rem 3rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);text-align:center;max-width:480px}
     .spinner{width:48px;height:48px;border:5px solid #e0e0e0;border-top-color:#1976d2;border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 1.5rem}
     @keyframes spin{to{transform:rotate(360deg)}}
     p{color:#555;margin:.5rem 0}
-    .error{color:#c62828}
+    .error{color:#c62828;font-weight:bold}
   </style>
 </head>
 <body>
@@ -174,24 +178,49 @@ module.exports.getTransactionsDataByDate = async (req, res) => {
     <p id="sub" style="font-size:.85rem;color:#888">Esto puede tardar varios minutos según el rango de fechas.</p>
   </div>
   <script>
+    var retries = 0;
+    var maxRetries = 60;
     (function poll(){
-      fetch('/data/job-status/${jobId}')
-        .then(function(r){return r.json()})
+      fetch(window.location.origin + '/data/job-status/${jobId}')
+        .then(function(r){
+          if(!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
         .then(function(d){
-          if(d.status==='done'){
-            document.getElementById('msg').textContent='¡Listo! Descargando archivo…';
-            document.getElementById('sub').textContent='';
-            document.getElementById('spinner').style.borderTopColor='#2e7d32';
-            window.location.href='/data/job-download/${jobId}';
-          } else if(d.status==='error'){
-            document.getElementById('spinner').style.display='none';
-            document.getElementById('msg').className='error';
-            document.getElementById('msg').textContent='Error: '+(d.error||'desconocido');
+          if(d.status === 'done'){
+            document.getElementById('msg').textContent = '¡Listo! Descargando archivo…';
+            document.getElementById('sub').textContent = '';
+            document.getElementById('spinner').style.borderTopColor = '#2e7d32';
+            window.location.href = window.location.origin + '/data/job-download/${jobId}';
+          } else if(d.status === 'error'){
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('msg').className = 'error';
+            document.getElementById('msg').textContent = 'Error: ' + (d.error || 'desconocido');
+          } else if(d.status === 'not_found'){
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('msg').className = 'error';
+            document.getElementById('msg').textContent = 'El trabajo no fue encontrado. Es posible que el servidor haya reiniciado. Por favor, vuelva a intentarlo.';
           } else {
-            setTimeout(poll,3000);
+            retries++;
+            if(retries >= maxRetries){
+              document.getElementById('spinner').style.display = 'none';
+              document.getElementById('msg').className = 'error';
+              document.getElementById('msg').textContent = 'Tiempo de espera agotado. Por favor, intente con un rango de fechas menor.';
+              return;
+            }
+            setTimeout(poll, 3000);
           }
         })
-        .catch(function(){setTimeout(poll,5000)});
+        .catch(function(err){
+          retries++;
+          if(retries >= maxRetries){
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('msg').className = 'error';
+            document.getElementById('msg').textContent = 'No se pudo conectar con el servidor. Recargue la página e intente nuevamente.';
+            return;
+          }
+          setTimeout(poll, 5000);
+        });
     })();
   </script>
 </body>
